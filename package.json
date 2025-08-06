@@ -1,0 +1,48 @@
+{
+  "name": "template-ai-storyboard-consistent-character",
+  "version": "1.0.0",
+  "description": "A powerful Mastra template for generating AI-powered storyboards from scripts or story ideas. Features script generation, visual storyboarding, character consistency, and multiple art styles.",
+  "main": "src/mastra/index.ts",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "mastra dev",
+    "build": "mastra build",
+    "start": "mastra start"
+  },
+  "keywords": [
+    "mastra",
+    "template",
+    "storyboard",
+    "ai",
+    "script",
+    "generation",
+    "visual",
+    "storytelling"
+  ],
+  "author": "AI Storyboard Generator Team",
+  "license": "MIT",
+  "dependencies": {
+    "@ai-sdk/google": "^1.2.22",
+    "@ai-sdk/openai": "^1.3.23",
+    "@google/genai": "^1.12.0",
+    "@google/generative-ai": "^0.24.1",
+    "@mastra/core": "^0.12.1",
+    "@mastra/libsql": "^0.12.0",
+    "@mastra/loggers": "^0.10.5",
+    "@mastra/memory": "^0.12.0",
+    "@modelcontextprotocol/server-filesystem": "^2025.7.29",
+    "@types/pdfkit": "^0.17.2",
+    "canvas": "^3.1.2",
+    "jspdf": "^2.5.1",
+    "pdfkit": "^0.17.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.0",
+    "mastra": "^0.10.19-alpha.1",
+    "typescript": "^5.9.2"
+  }
+}
