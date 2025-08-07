@@ -6,8 +6,10 @@ import { scriptGeneratorAgent } from './agents/script-generator-agent';
 import { storyboardAgent } from './agents/storyboard-agent';
 import { imageGeneratorAgent } from './agents/image-generator-agent';
 import { exportAgent } from './agents/export-agent';
+import { pdfUploadAgent } from './agents/pdf-upload-agent';
 import { storyboardNetwork, storyboardNetworkLegacy } from './agent-network';
 import { automatedAgentNetworkWorkflow } from './workflows/agent-network-automated-workflow';
+import { storyboardToCloudWorkflow } from './workflows/pdf-upload-workflow';
 import { createSharedMemory } from './memory-config';
 
 // Create shared storage for all memory instances
@@ -21,6 +23,7 @@ export const mastra = new Mastra({
     storyboardAgent,
     imageGeneratorAgent,
     exportAgent,
+    pdfUploadAgent,
   },
   networks: {
     storyboardNetworkLegacy,
@@ -30,6 +33,7 @@ export const mastra = new Mastra({
   },
   workflows: {
     automatedAgentNetworkWorkflow,
+    storyboardToCloudWorkflow,
   },
   storage: sharedStorage, // Enable shared storage for memory
   logger: new PinoLogger({
@@ -61,9 +65,13 @@ export {
 export * from './schemas/script-schema';
 export * from './schemas/storyboard-schema';
 export * from './schemas/export-schema';
+export * from './schemas/pdf-upload-schema';
 
 // Export memory configuration
 export * from './memory-config';
 
 // Export the automated workflow function for direct use
 export { runAutomatedAgentNetwork } from './workflows/agent-network-automated-workflow';
+
+// Export PDF upload workflow functions
+export { generateAndUploadStoryboard } from './workflows/pdf-upload-workflow';

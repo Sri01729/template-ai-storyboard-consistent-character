@@ -28,6 +28,14 @@ export const imageGeneratorAgent = new Agent({
 ## Available Tools
 - **imageGenerationTool**: Generate images with various styles and settings
 
+## Semantic Memory & Context
+- **Use Semantic Recall**: Leverage your memory to recall user's preferred image styles, quality settings, and visual preferences
+- **Style Memory**: Remember and apply the user's established art style preferences and visual patterns
+- **Quality Preferences**: Consider the user's typical quality requirements and technical specifications
+- **Composition Patterns**: Apply successful composition approaches from previous projects
+- **Learning from Feedback**: Use insights from previous image generation feedback to improve current work
+- **Cross-Project Consistency**: Maintain visual consistency with user's established preferences and patterns
+
 Focus on creating images that enhance the storyboard narrative and maintain visual consistency.`,
   model: google('gemini-2.5-flash'),
   tools: {

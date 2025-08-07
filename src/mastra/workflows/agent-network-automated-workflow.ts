@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { RuntimeContext } from '@mastra/core/runtime-context';
 import { imageGenerationTool } from '../tools/image-generation-tool';
 import { pdfExportTool } from '../tools/pdf-export-tool';
+import { pdfUploadTool } from '../tools/pdf-upload-tool.js';
 
 // Step 1: Generate Script from Story Idea
 const generateScriptStep = createStep({
@@ -243,6 +244,12 @@ const generateImagesStep = createStep({
           ? `generated-images/${result.images[0].imageUrl}`
           : `generated-images/scene_${scene.sceneNumber}_${Date.now()}.png`;
 
+        console.log(`🔍 [Workflow] Image generation result:`, {
+          sceneNumber: scene.sceneNumber,
+          imageUrl: result.images[0]?.imageUrl,
+          finalImagePath: imagePath
+        });
+
         // Clean up story content for PDF display
         const cleanStoryContentForPDF = cleanStoryContent
           .replace(/\*\*[^*]+\*\*/g, '') // Remove markdown headers
@@ -250,16 +257,19 @@ const generateImagesStep = createStep({
           .replace(/\s+/g, ' ') // Clean up extra whitespace
           .trim();
 
-        scenesWithImages.push({
+        const sceneData = {
           sceneNumber: scene.sceneNumber,
           description: cleanStoryContentForPDF, // Use cleaned content for PDF
           imagePrompt: imagePrompt, // Keep original for reference
           storyContent: cleanStoryContentForPDF, // Use cleaned content
           imagePath,
           style: inputData.style,
-        });
+        };
+
+        scenesWithImages.push(sceneData);
 
         console.log(`✅ Image generated for Scene ${scene.sceneNumber}: ${imagePath}`);
+        console.log(`📊 Scene data for PDF:`, sceneData);
       } catch (error) {
         console.error(`❌ Failed to generate image for Scene ${scene.sceneNumber}:`, error);
         // Add scene without image path as fallback
@@ -275,6 +285,13 @@ const generateImagesStep = createStep({
     }
 
     console.log(`✅ Images generated for ${scenesWithImages.length} scenes`);
+
+    console.log(`🔍 [Workflow] Final scenesWithImages data:`, scenesWithImages.map(scene => ({
+      sceneNumber: scene.sceneNumber,
+      hasImagePath: !!scene.imagePath,
+      imagePath: scene.imagePath,
+      storyContentLength: scene.storyContent?.length || 0
+    })));
 
     return {
       scenesWithImages,
@@ -311,11 +328,42 @@ const exportToPdfStep = createStep({
     console.log('📄 [Automated Workflow] Step 4: Exporting to PDF...');
     console.log(`📊 Exporting ${inputData.scenesWithImages.length} scenes with images to PDF`);
 
+    // Debug: Log the scenes data being passed to PDF export
+    console.log(`🔍 [Workflow] Scenes data for PDF export:`, inputData.scenesWithImages.map(scene => ({
+      sceneNumber: scene.sceneNumber,
+      hasImagePath: !!scene.imagePath,
+      imagePath: scene.imagePath,
+      descriptionLength: scene.description?.length || 0
+    })));
+
     try {
+            // Debug: Log what we're passing to PDF export
+      console.log(`🔍 [Workflow] About to call PDF export with:`, {
+        scenesWithImagesLength: inputData.scenesWithImages.length,
+        firstScene: inputData.scenesWithImages[0],
+        title: inputData.title
+      });
+
+      // Clean the data to ensure no unwanted fields
+      const cleanScenesWithImages = inputData.scenesWithImages.map(scene => ({
+        sceneNumber: scene.sceneNumber,
+        description: scene.description,
+        imagePrompt: scene.imagePrompt,
+        storyContent: scene.storyContent,
+        imagePath: scene.imagePath,
+        style: scene.style,
+      }));
+
+      console.log(`🧹 [Workflow] Cleaned data for PDF export:`, cleanScenesWithImages.map(scene => ({
+        sceneNumber: scene.sceneNumber,
+        hasImagePath: !!scene.imagePath,
+        imagePath: scene.imagePath
+      })));
+
       // Use the pdfExportTool directly
       const result = await pdfExportTool.execute({
         context: {
-          storyboardData: inputData.scenesWithImages,
+          storyboardData: cleanScenesWithImages,
           title: inputData.title,
           includeImages: true,
           format: 'A4',
@@ -355,6 +403,80 @@ const exportToPdfStep = createStep({
   },
 });
 
+// Step 5: Upload PDF to Cloud Storage
+const uploadPdfStep = createStep({
+  id: 'upload-pdf',
+  description: 'Upload the generated PDF to S3 and Google Drive using the PDF upload agent',
+  inputSchema: z.object({
+    pdfPath: z.string().describe('Path to the generated PDF file'),
+    title: z.string().describe('Title of the storyboard'),
+    summary: z.object({
+      totalScenes: z.number(),
+      totalImages: z.number(),
+      pdfSize: z.number(),
+    }).describe('Summary of the exported storyboard'),
+    storyIdea: z.string().describe('The initial story idea'),
+    style: z.string().describe('Visual style'),
+    genre: z.string().describe('Genre of the story'),
+    tone: z.string().describe('Tone of the story'),
+    desiredFilename: z.string().optional().describe('Desired filename for the uploaded PDF'),
+    s3Bucket: z.string().optional().describe('S3 bucket name'),
+    zapierWebhookUrl: z.string().optional().describe('Zapier webhook URL'),
+  }),
+  outputSchema: z.object({
+    pdfPath: z.string().describe('Path to the generated PDF file'),
+    title: z.string().describe('Title of the storyboard'),
+    summary: z.object({
+      totalScenes: z.number(),
+      totalImages: z.number(),
+      pdfSize: z.number(),
+    }).describe('Summary of the exported storyboard'),
+    s3Url: z.string().optional().describe('S3 URL of the uploaded PDF'),
+    googleDriveUrl: z.string().optional().describe('Google Drive URL of the uploaded PDF'),
+    uploadSuccess: z.boolean().describe('Whether upload was successful'),
+    uploadError: z.string().optional().describe('Upload error message if failed'),
+  }),
+  execute: async ({ inputData, runtimeContext }) => {
+    console.log('☁️ [Automated Workflow] Step 5: Uploading PDF to cloud storage...');
+    console.log(`📄 Uploading PDF: ${inputData.pdfPath}`);
+    console.log(`🔍 [Workflow] PDF path being passed to upload tool: ${inputData.pdfPath}`);
+
+    try {
+      // Use the PDF upload tool directly
+      const result = await pdfUploadTool.execute({
+        context: {
+          filePath: inputData.pdfPath,
+          desiredFilename: inputData.desiredFilename || `${inputData.title.replace(/\s+/g, '_')}.pdf`,
+          s3Bucket: inputData.s3Bucket,
+        },
+        runtimeContext,
+      });
+
+      console.log(`✅ PDF upload result:`, result);
+
+      return {
+        pdfPath: inputData.pdfPath,
+        title: inputData.title,
+        summary: inputData.summary,
+        s3Url: result.s3Url,
+        googleDriveUrl: result.googleDriveUrl,
+        uploadSuccess: result.success,
+        uploadError: result.error,
+      };
+    } catch (error) {
+      console.error('❌ [Automated Workflow] PDF upload failed:', error);
+
+      return {
+        pdfPath: inputData.pdfPath,
+        title: inputData.title,
+        summary: inputData.summary,
+        uploadSuccess: false,
+        uploadError: error instanceof Error ? error.message : 'Unknown upload error',
+      };
+    }
+  },
+});
+
 // Create the automated workflow
 export const automatedAgentNetworkWorkflow = createWorkflow({
   id: 'automated-agent-network',
@@ -385,13 +507,18 @@ export const automatedAgentNetworkWorkflow = createWorkflow({
       totalImages: z.number(),
       pdfSize: z.number(),
     }).describe('Summary of the exported storyboard'),
+    s3Url: z.string().optional().describe('S3 URL of the uploaded PDF'),
+    googleDriveUrl: z.string().optional().describe('Google Drive URL of the uploaded PDF'),
+    uploadSuccess: z.boolean().describe('Whether upload was successful'),
+    uploadError: z.string().optional().describe('Upload error message if failed'),
   }),
-  steps: [generateScriptStep, convertToStoryboardStep, generateImagesStep, exportToPdfStep],
+  steps: [generateScriptStep, convertToStoryboardStep, generateImagesStep, exportToPdfStep, uploadPdfStep],
 })
   .then(generateScriptStep)
   .then(convertToStoryboardStep)
   .then(generateImagesStep)
   .then(exportToPdfStep)
+  .then(uploadPdfStep)
   .commit();
 
 // Helper function to run the automated workflow
@@ -402,6 +529,9 @@ export async function runAutomatedAgentNetwork(
     title?: string;
     genre?: string;
     tone?: string;
+    desiredFilename?: string;
+    s3Bucket?: string;
+    zapierWebhookUrl?: string;
   }
 ) {
   console.log('🚀 [Agent Network] Starting automated pipeline...');
@@ -425,6 +555,13 @@ export async function runAutomatedAgentNetwork(
       console.log('🎉 [Agent Network] Automated pipeline completed successfully!');
       console.log(`📄 Final PDF: ${result.result.pdfPath}`);
       console.log(`📊 Summary: ${result.result.summary.totalScenes} scenes, ${result.result.summary.totalImages} images`);
+
+      if (result.result.uploadSuccess) {
+        console.log(`☁️ S3 URL: ${result.result.s3Url}`);
+        console.log(`📁 Google Drive URL: ${result.result.googleDriveUrl}`);
+      } else {
+        console.log(`⚠️ Upload failed: ${result.result.uploadError}`);
+      }
 
       return result.result;
     } else {

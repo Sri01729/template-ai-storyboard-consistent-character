@@ -46,7 +46,13 @@ export const pdfExportTool = createTool({
 
     try {
       // Create output directory
-      const projectRoot = path.resolve(__dirname, '../../..'); // Go up from src/mastra/tools to project root
+      // process.cwd() might be .mastra/output, so we need to go up to the actual project root
+      let projectRoot = path.resolve(process.cwd());
+
+      // If we're in .mastra/output, go up to the actual project root
+      if (projectRoot.includes('.mastra/output')) {
+        projectRoot = path.resolve(projectRoot, '../..');
+      }
       const outputDir = path.join(projectRoot, 'generated-exports');
       console.log(`📁 [PDF Export Tool] Project root: ${projectRoot}`);
       console.log(`📁 [PDF Export Tool] Creating output directory: ${outputDir}`);
@@ -258,13 +264,21 @@ export const pdfExportTool = createTool({
              .text(`Scene ${index + 1}`, { align: 'center' })
              .moveDown(1);
 
-          // Add image if available
+          // Add image if available - only use imagePath, throw error if not found
           const imagePath = scene.imagePath || scene.imageUrl;
           if (imagePath && typeof imagePath === 'string') {
             console.log(`🖼️ [PDF Export Tool] Processing image: ${imagePath}`);
             try {
               // Fix path resolution - use project root for all paths
-              const projectRoot = path.resolve(__dirname, '../../..'); // Go up from src/mastra/tools to project root
+              // process.cwd() might be .mastra/output, so we need to go up to the actual project root
+              let projectRoot = path.resolve(process.cwd());
+
+              // If we're in .mastra/output, go up to the actual project root
+              if (projectRoot.includes('.mastra/output')) {
+                projectRoot = path.resolve(projectRoot, '../..');
+              }
+
+              console.log(`🔍 [PDF Export Tool] Resolved project root: ${projectRoot}`);
               let fullImagePath;
 
               if (imagePath.startsWith('.mastra/')) {
@@ -291,7 +305,7 @@ export const pdfExportTool = createTool({
                   // Calculate image dimensions to fit nicely on page
                   const pageWidth = doc.page.width;
                   const imageWidth = pageWidth - 120; // Leave margins
-                  const imageHeight = 300; // Fixed height for consistency
+                  const imageHeight = 400; // Increased height for better proportions
                   const imageX = (pageWidth - imageWidth) / 2; // Center horizontally
                   const imageY = doc.y + 20; // Add some space after title
 
@@ -382,12 +396,7 @@ export const pdfExportTool = createTool({
           }
 
           // Add scene number only (removed duplicate description)
-          console.log(`📋 [PDF Export Tool] Adding scene number`);
-          doc.fontSize(12)
-             .font('Times-Italic')
-             .fillColor('#95A5A6')
-             .text(`Scene ${index + 1}`, { align: 'center' })
-             .moveDown(1);
+          // Removed scene number display
 
           scenesProcessed++;
 
@@ -411,6 +420,17 @@ export const pdfExportTool = createTool({
       } else {
         scenes = [context.storyboardData];
       }
+
+      // Debug: Log the scenes data being processed
+      console.log(`🔍 [PDF Export Tool] Processing ${scenes.length} scenes:`, scenes.map(scene => ({
+        sceneNumber: scene.sceneNumber,
+        hasImagePath: !!scene.imagePath,
+        imagePath: scene.imagePath,
+        descriptionLength: scene.description?.length || 0
+      })));
+
+      // Debug: Log the raw storyboardData to see what we're actually receiving
+      console.log(`🔍 [PDF Export Tool] Raw storyboardData:`, JSON.stringify(context.storyboardData, null, 2));
 
       // Generate content
       generateStorybookContent(scenes, doc);

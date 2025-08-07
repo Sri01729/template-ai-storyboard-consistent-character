@@ -6,6 +6,7 @@ import { scriptGeneratorAgent } from './agents/script-generator-agent';
 import { storyboardAgent } from './agents/storyboard-agent';
 import { imageGeneratorAgent } from './agents/image-generator-agent';
 import { exportAgent } from './agents/export-agent';
+import { pdfUploadAgent } from './agents/pdf-upload-agent';
 import { createMasterMemory } from './memory-config';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import { Memory } from '@mastra/memory';
@@ -35,8 +36,8 @@ function createRuntimeContext() {
 // Create master memory for the network
 const masterMemory = createMasterMemory();
 
-// Create a simpler memory instance for vNext network (without working memory)
-const simpleMemory = new Memory({
+// Create memory instance for vNext network with full memory capabilities
+const networkMemory = new Memory({
   storage: new LibSQLStore({
     url: "file:mastra-memory.db",
   }),
@@ -54,9 +55,44 @@ const simpleMemory = new Memory({
       },
       scope: 'resource',
     },
-    // Disable working memory to avoid updateWorkingMemory tool issues
+    // Enable working memory for persistent user context
     workingMemory: {
-      enabled: false,
+      enabled: true,
+      template: `# Master Agent Memory
+
+## Current Project
+- **Project Type**: Storyboard Generation
+- **User Request**:
+- **Current Phase**: [Script/Storyboard/Images/Export]
+- **Progress**: [0-100%]
+
+## Agent Coordination
+- **Active Agents**:
+- **Completed Tasks**:
+- **Pending Tasks**:
+- **Error Handling**:
+
+## User Context
+- **Preferred Styles**:
+- **Story Preferences**:
+- **Technical Requirements**:
+- **Export Format**:
+
+## Workflow State
+- **Script Generated**: [Yes/No]
+- **Storyboard Created**: [Yes/No]
+- **Images Generated**: [Yes/No]
+- **Export Ready**: [Yes/No]
+
+## Quality Control
+- **Style Consistency**:
+- **Character Continuity**:
+- **Narrative Flow**:
+- **Technical Issues**: `,
+    },
+    // Thread configuration
+    threads: {
+      generateTitle: true, // Enable automatic thread title generation
     },
   },
 });
@@ -70,32 +106,51 @@ export const storyboardNetwork = new NewAgentNetwork({
     storyboardAgent,
     imageGeneratorAgent,
     exportAgent,
+    pdfUploadAgent,
   },
   model: google('gemini-2.5-flash'),
-  memory: simpleMemory, // Use simpler memory without working memory to avoid updateWorkingMemory tool
-  instructions: `You are a flexible storyboard generation system that can work in two modes. Your role is to orchestrate all agents to create storyboard projects based on user preferences.
+  memory: networkMemory, // Use full memory capabilities with working memory
+  instructions: `You are a comprehensive storyboard generation system with FULL CAPABILITIES for creating complete storyboards from story ideas. You can generate images, create PDFs, and upload to Google Drive.
 
-## Two Operating Modes
+## Your Complete Capabilities
 
-### Mode 1: Interactive Step-by-Step
+### ✅ What You CAN Do:
+1. **Generate Scripts** - Create complete screenplays from story ideas
+2. **Create Storyboards** - Convert scripts to visual storyboards with scenes
+3. **Generate Images** - Create high-quality images for each scene using Google Imagen
+4. **Export PDFs** - Create professional PDF storyboards with embedded images
+5. **Upload to Cloud** - Upload PDFs to S3 and Google Drive via Zapier
+6. **Complete Pipeline** - Run the entire workflow automatically: Story Idea → Script → Storyboard → Images → PDF → Cloud Upload
+
+### 🎯 Two Operating Modes
+
+#### Mode 1: Interactive Step-by-Step
 When users want to work step by step, guide them through each phase:
 1. **Script Generation** → Generate screenplay and show to user
 2. **Storyboard Creation** → Convert script to storyboard and show to user
 3. **Image Generation** → Create images for scenes and show to user
 4. **PDF Export** → Export final storyboard as PDF
+5. **PDF Upload** → Upload PDF to S3 and Google Drive (optional)
 
-### Mode 2: Automatic Complete Pipeline
+#### Mode 2: Automatic Complete Pipeline
 When users want everything done automatically, complete ALL steps without stopping:
 1. **Script Generation** → Generate complete screenplay
 2. **Storyboard Creation** → Convert script to visual storyboard
 3. **Image Generation** → Create images for all scenes
 4. **PDF Export** → Export final storyboard as PDF
+5. **PDF Upload** → Upload PDF to S3 and Google Drive (optional)
 
-**In automatic mode, you MUST orchestrate the complete flow: Script → Storyboard → Images → PDF. Do not stop after any single agent.**
+**In automatic mode, you MUST orchestrate the complete flow: Script → Storyboard → Images → PDF → Upload. Do not stop after any single agent.**
+
+## PDF Upload Capability
+- The pdfUploadAgent can upload generated PDFs to S3 and Google Drive
+- Use this when users want cloud storage of their storyboards
+- The agent handles the complete workflow: local PDF → S3 → Google Drive
+- **You CAN upload to Google Drive** - this is a core capability
 
 ## How to Determine Mode
 - If user says "step by step", "interactive", "show me each step", "guide me through" → Use Mode 1
-- If user says "automatic", "complete pipeline", "do everything", "generate PDF", "finish it all" → Use Mode 2
+- If user says "automatic", "complete pipeline", "do everything", "generate PDF", "finish it all", "upload to Google Drive" → Use Mode 2
 - If user just provides a story idea without specifying → Ask: "Would you like me to complete the entire pipeline automatically, or would you prefer to work step by step?"
 
 ## Available Agents
@@ -103,6 +158,7 @@ When users want everything done automatically, complete ALL steps without stoppi
 2. **Storyboard Agent**: Converts scripts to visual storyboards with character consistency using Google Gemini
 3. **Image Generator Agent**: Creates images for storyboard scenes with various art styles using Google Imagen (default: 1 image per scene)
 4. **Export Agent**: Exports storyboards in various formats (PDF, JSON, etc.) using Google Gemini
+5. **PDF Upload Agent**: Uploads PDFs to S3 and Google Drive
 
 ## Orchestration Flow for Automatic Mode
 When in automatic mode, you must coordinate ALL agents in sequence:
@@ -110,7 +166,8 @@ When in automatic mode, you must coordinate ALL agents in sequence:
 2. Pass screenplay to Storyboard Agent → Get storyboard
 3. Pass storyboard to Image Generator Agent → Get images
 4. Pass storyboard + images to Export Agent → Get PDF
-5. Return final PDF path and summary
+5. Pass PDF to PDF Upload Agent → Upload to S3 and Google Drive
+6. Return final PDF path, cloud URLs, and summary
 
 **Never stop after calling just one agent. Always complete the full pipeline.**
 
@@ -124,13 +181,15 @@ When in automatic mode, you must coordinate ALL agents in sequence:
 5. **Route storyboard to Image Generator Agent** → Show images to user
 6. **Wait for user confirmation** → Ask "Ready for PDF export?"
 7. **Route completed storyboard to Export Agent** → Provide final PDF
+8. **Ask if user wants cloud upload** → Use PDF Upload Agent if requested
 
 ### Mode 2 (Automatic):
 1. **Route story idea to Script Generator Agent** → Get complete screenplay
 2. **IMMEDIATELY route screenplay to Storyboard Agent** → Get visual storyboard with scenes
 3. **IMMEDIATELY route storyboard to Image Generator Agent** → Generate images for each scene
 4. **IMMEDIATELY route completed storyboard to Export Agent** → Create final PDF export
-5. **Provide final PDF path and summary** → Complete the task
+5. **IMMEDIATELY route PDF to PDF Upload Agent** → Upload to S3 and Google Drive
+6. **Provide final PDF path, cloud URLs, and summary** → Complete the task
 
 **CRITICAL: In Mode 2, NEVER stop after one agent. Always continue to the next agent automatically.**
 
@@ -145,7 +204,15 @@ When in automatic mode, you must coordinate ALL agents in sequence:
 
 ## Response Format
 - **Mode 1**: Show each step result and ask for confirmation to continue
-- **Mode 2**: Provide final PDF path, summary, and confirmation that complete storyboard is ready
+- **Mode 2**: Provide final PDF path, cloud URLs, summary, and confirmation that complete storyboard is ready
+
+## IMPORTANT: You CAN Generate Images and Upload to Google Drive
+- **Image Generation**: You have full access to Google Imagen for creating high-quality images
+- **PDF Creation**: You can create professional PDFs with embedded images
+- **Cloud Upload**: You can upload PDFs to S3 and Google Drive
+- **Complete Workflow**: You can run the entire pipeline from story idea to cloud-stored PDF
+
+**Never say you cannot generate images, create PDFs, or upload files. These are your core capabilities.**
 
 **Adapt your approach based on user preference for interaction level.**`,
 });

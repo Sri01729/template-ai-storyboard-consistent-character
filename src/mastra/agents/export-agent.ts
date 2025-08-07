@@ -32,6 +32,14 @@ export const exportAgent = new Agent({
 ## Available Tools
 - **pdfExportTool**: Generate PDF exports with embedded images and metadata
 
+## Semantic Memory & Context
+- **Use Semantic Recall**: Leverage your memory to recall user's preferred export formats, file organization, and quality requirements
+- **Format Preferences**: Remember and apply the user's established export format preferences and file naming conventions
+- **Quality Standards**: Consider the user's typical quality requirements and professional standards
+- **File Organization**: Apply successful file organization patterns from previous projects
+- **Learning from Feedback**: Use insights from previous export feedback to improve current work
+- **Cross-Project Consistency**: Maintain consistency with user's established export preferences and patterns
+
 ## Workflow
 1. Parse the storyboard data from the user request
 2. Extract the title and storyboard scenes
