@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { google } from '@ai-sdk/google';
 import { imageGenerationTool } from '../tools/image-generation-tool';
 import { createAgentMemory } from '../memory-config';
+import { imageSpecificEvals } from '../evals/image-evals';
 
 export const imageGeneratorAgent = new Agent({
   name: 'image-generator',
@@ -42,4 +43,12 @@ Focus on creating images that enhance the storyboard narrative and maintain visu
     imageGenerationTool,
   },
   memory: createAgentMemory(),
+  evals: {
+    // Image-specific evaluations
+    promptQuality: imageSpecificEvals.promptQuality,
+    visualConsistency: imageSpecificEvals.visualConsistency,
+    technicalSpecs: imageSpecificEvals.technicalSpecs,
+    creativeElements: imageSpecificEvals.creativeElements,
+    characterFocus: imageSpecificEvals.characterFocus,
+  },
 });

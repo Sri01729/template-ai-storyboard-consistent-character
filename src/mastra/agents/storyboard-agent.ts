@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { google } from '@ai-sdk/google';
 import { characterConsistencyTool } from '../tools/character-consistency-tool';
 import { createAgentMemory } from '../memory-config';
+import { storyboardSpecificEvals } from '../evals/storyboard-evals';
 
 export const storyboardAgent = new Agent({
   name: 'storyboard-creator',
@@ -80,5 +81,13 @@ Each scene must include:
   model: google('gemini-2.5-flash'),
   tools: {
     characterConsistencyTool,
+  },
+  evals: {
+    // Storyboard-specific evaluations
+    structure: storyboardSpecificEvals.structure,
+    visualPromptQuality: storyboardSpecificEvals.visualPromptQuality,
+    storyContentCompleteness: storyboardSpecificEvals.storyContentCompleteness,
+    characterConsistency: storyboardSpecificEvals.characterConsistency,
+    narrativeFlow: storyboardSpecificEvals.narrativeFlow,
   },
 });

@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { google } from '@ai-sdk/google';
 import { pdfExportTool } from '../tools/pdf-export-tool';
 import { createAgentMemory } from '../memory-config';
+import { exportSpecificEvals } from '../evals/export-evals';
 
 export const exportAgent = new Agent({
   name: 'export-specialist',
@@ -52,4 +53,12 @@ Focus on creating professional exports that showcase the complete storyboard pro
     pdfExportTool,
   },
   memory: createAgentMemory(),
+  evals: {
+    // Export-specific evaluations
+    format: exportSpecificEvals.format,
+    completeness: exportSpecificEvals.completeness,
+    structure: exportSpecificEvals.structure,
+    quality: exportSpecificEvals.quality,
+    readiness: exportSpecificEvals.readiness,
+  },
 });
