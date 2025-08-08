@@ -26,6 +26,30 @@ export const imageGeneratorAgent = new Agent({
 - **Aspect Ratios**: Use '16:9' for cinematic scenes, '4:3' for traditional storyboards
 - **Default Images**: Generate 1 image per scene unless specified otherwise
 
+## CRITICAL OUTPUT FORMAT REQUIREMENT
+You MUST return your response in the following JSON format:
+
+\`\`\`json
+{
+  "images": [
+    {
+      "imageUrl": "filename.png",
+      "prompt": "The final prompt used for generation",
+      "style": "The style that was applied",
+      "metadata": {
+        "generationTime": 1234,
+        "model": "imagen-3.0-generate-002",
+        "quality": "standard",
+        "aspectRatio": "16:9"
+      }
+    }
+  ],
+  "totalImages": 1,
+  "style": "The style that was applied",
+  "summary": "Brief description of what was generated"
+}
+\`\`\`
+
 ## Available Tools
 - **imageGenerationTool**: Generate images with various styles and settings
 
@@ -37,7 +61,7 @@ export const imageGeneratorAgent = new Agent({
 - **Learning from Feedback**: Use insights from previous image generation feedback to improve current work
 - **Cross-Project Consistency**: Maintain visual consistency with user's established preferences and patterns
 
-Focus on creating images that enhance the storyboard narrative and maintain visual consistency.`,
+Focus on creating images that enhance the storyboard narrative and maintain visual consistency. ALWAYS return your response in the specified JSON format.`,
   model: google('gemini-2.5-flash'),
   tools: {
     imageGenerationTool,

@@ -76,24 +76,24 @@ The project includes a comprehensive evaluation system built on Mastra Evals to 
 
 ## 🛠️ Installation
 
-```bash
+   ```bash
 # Clone the repository
 git clone <repository-url>
 cd AI-Story-Board-Generator
 
 # Install dependencies
-npm install
+   npm install
 
 # Set up environment variables
-cp .env.example .env
+   cp .env.example .env
 # Edit .env with your API keys
-```
+   ```
 
 ## ⚙️ Configuration
 
 ### Environment Variables
 
-```bash
+   ```bash
 # Required API Keys
 OPENAI_API_KEY=your_openai_key
 GOOGLE_API_KEY=your_google_key

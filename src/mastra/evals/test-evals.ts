@@ -2,9 +2,9 @@ import { storyboardSpecificEvals } from './storyboard-evals';
 
 // Test data for storyboard evaluation
 const testScript = `
-A young wizard named Alex discovers a mysterious book in the attic. 
-As Alex opens it, magical symbols begin to glow. Suddenly, a small 
-dragon appears from the pages, looking confused and lost. Alex 
+A young wizard named Alex discovers a mysterious book in the attic.
+As Alex opens it, magical symbols begin to glow. Suddenly, a small
+dragon appears from the pages, looking confused and lost. Alex
 decides to help the dragon find its way back home.
 `;
 
@@ -118,24 +118,24 @@ export async function runStoryboardEvals() {
 // Test function to evaluate actual agent output
 export async function evaluateStoryboardAgent(agentOutput: string) {
   console.log('🤖 Evaluating Agent Output...\n');
-  
+
   try {
     const results = await runStoryboardEvals();
-    
+
     // Determine quality level
     let qualityLevel = 'Poor';
     if (results.overall >= 0.8) qualityLevel = 'Excellent';
     else if (results.overall >= 0.7) qualityLevel = 'Good';
     else if (results.overall >= 0.6) qualityLevel = 'Acceptable';
     else if (results.overall >= 0.5) qualityLevel = 'Needs Improvement';
-    
+
     console.log(`\n🏆 Quality Assessment: ${qualityLevel}`);
-    
+
     return {
       ...results,
       qualityLevel
     };
-    
+
   } catch (error) {
     console.error('❌ Error evaluating agent output:', error);
     throw error;

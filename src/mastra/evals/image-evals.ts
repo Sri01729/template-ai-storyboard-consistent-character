@@ -9,19 +9,19 @@ interface MetricResult {
 // Helper function to extract JSON from markdown code blocks
 function extractJSON(output: string): string {
   console.log('🔍 [JSON Extraction] Original output starts with:', output.substring(0, 100));
-  
+
   // Remove markdown code block markers
   let cleaned = output;
-  
+
   // Remove ```json and ``` markers
   cleaned = cleaned.replace(/```json\s*/gi, '');
   cleaned = cleaned.replace(/```\s*$/gi, '');
-  
+
   // Remove any leading/trailing whitespace
   cleaned = cleaned.trim();
-  
+
   console.log('🔍 [JSON Extraction] Cleaned output starts with:', cleaned.substring(0, 100));
-  
+
   return cleaned;
 }
 
@@ -31,39 +31,58 @@ export class ImagePromptQualityMetric {
     console.log('🔍 [ImagePromptQualityMetric] Starting evaluation...');
     console.log('🔍 [ImagePromptQualityMetric] Input:', input.substring(0, 100) + '...');
     console.log('🔍 [ImagePromptQualityMetric] Output length:', output.length);
-    
+
     try {
       // Extract JSON from markdown if needed
       const jsonOutput = extractJSON(output);
-      
+
       // Parse the output to check if it's valid JSON
       console.log('🔍 [ImagePromptQualityMetric] Attempting to parse JSON...');
       const parsed = JSON.parse(jsonOutput);
       console.log('🔍 [ImagePromptQualityMetric] JSON parsed successfully');
       console.log('🔍 [ImagePromptQualityMetric] Parsed keys:', Object.keys(parsed));
 
-      if (!parsed.imagePrompt || typeof parsed.imagePrompt !== 'string') {
-        console.log('❌ [ImagePromptQualityMetric] No image prompt found in output');
-        console.log('❌ [ImagePromptQualityMetric] Has imagePrompt:', !!parsed.imagePrompt);
-        console.log('❌ [ImagePromptQualityMetric] imagePrompt type:', typeof parsed.imagePrompt);
-        
+      if (!parsed.images || !Array.isArray(parsed.images) || parsed.images.length === 0) {
+        console.log('❌ [ImagePromptQualityMetric] No images array found in output');
+        console.log('❌ [ImagePromptQualityMetric] Has images:', !!parsed.images);
+        console.log('❌ [ImagePromptQualityMetric] images type:', typeof parsed.images);
+        console.log('❌ [ImagePromptQualityMetric] images length:', parsed.images?.length);
+
         return {
           score: 0,
           info: {
-            reason: 'No image prompt found in output',
-            hasImagePrompt: !!parsed.imagePrompt,
-            imagePromptType: typeof parsed.imagePrompt,
+            reason: 'No images array found in output',
+            hasImages: !!parsed.images,
+            imagesType: typeof parsed.images,
+            imagesLength: parsed.images?.length,
             parsedKeys: Object.keys(parsed)
           }
         };
       }
 
-      const prompt = parsed.imagePrompt;
+      const firstImage = parsed.images[0];
+      if (!firstImage.prompt || typeof firstImage.prompt !== 'string') {
+        console.log('❌ [ImagePromptQualityMetric] No prompt found in first image');
+        console.log('❌ [ImagePromptQualityMetric] Has prompt:', !!firstImage.prompt);
+        console.log('❌ [ImagePromptQualityMetric] prompt type:', typeof firstImage.prompt);
+
+        return {
+          score: 0,
+          info: {
+            reason: 'No prompt found in first image',
+            hasPrompt: !!firstImage.prompt,
+            promptType: typeof firstImage.prompt,
+            firstImageKeys: Object.keys(firstImage)
+          }
+        };
+      }
+
+      const prompt = firstImage.prompt;
       console.log('🔍 [ImagePromptQualityMetric] Image prompt:', prompt.substring(0, 100) + '...');
-      
+
       const words = prompt.split(' ').length;
       console.log('🔍 [ImagePromptQualityMetric] Word count:', words);
-      
+
       // Quality heuristics for image prompts
       const hasStyle = /style|artistic|cinematic|anime|comic|watercolor|oil|sketch|pixel|ghibli|disney|cyberpunk|steampunk|fantasy|sci-fi|horror|noir|pop|abstract|impressionistic|surreal|photorealistic/i.test(prompt);
       const hasLighting = /light|lighting|bright|dark|shadow|sunlight|moonlight|candlelight|neon|ambient/i.test(prompt);
@@ -98,7 +117,8 @@ export class ImagePromptQualityMetric {
           hasCamera,
           hasComposition,
           hasColor,
-          hasMood
+          hasMood,
+          totalImages: parsed.images.length
         }
       };
     } catch (error) {
@@ -120,30 +140,36 @@ export class VisualConsistencyMetric {
   async measure(input: string, output: string): Promise<MetricResult> {
     console.log('🔍 [VisualConsistencyMetric] Starting evaluation...');
     console.log('🔍 [VisualConsistencyMetric] Input:', input.substring(0, 100) + '...');
-    
+
     try {
       const jsonOutput = extractJSON(output);
       const parsed = JSON.parse(jsonOutput);
       console.log('🔍 [VisualConsistencyMetric] JSON parsed successfully');
-      
-      if (!parsed.imagePrompt || typeof parsed.imagePrompt !== 'string') {
-        console.log('❌ [VisualConsistencyMetric] No image prompt found in output');
-        return { score: 0, info: { reason: 'No image prompt found in output' } };
+
+      if (!parsed.images || !Array.isArray(parsed.images) || parsed.images.length === 0) {
+        console.log('❌ [VisualConsistencyMetric] No images array found in output');
+        return { score: 0, info: { reason: 'No images array found in output' } };
       }
 
-      const prompt = parsed.imagePrompt.toLowerCase();
+      const firstImage = parsed.images[0];
+      if (!firstImage.prompt || typeof firstImage.prompt !== 'string') {
+        console.log('❌ [VisualConsistencyMetric] No prompt found in first image');
+        return { score: 0, info: { reason: 'No prompt found in first image' } };
+      }
+
+      const prompt = firstImage.prompt.toLowerCase();
       const inputLower = input.toLowerCase();
-      
+
       console.log('🔍 [VisualConsistencyMetric] Prompt length:', prompt.length);
       console.log('🔍 [VisualConsistencyMetric] Input length:', inputLower.length);
-      
+
       // Check for consistency between input and output
-      const inputWords = inputLower.split(' ').filter(word => word.length > 3);
-      const promptWords = prompt.split(' ').filter(word => word.length > 3);
-      
+      const inputWords = inputLower.split(' ').filter((word: string) => word.length > 3);
+      const promptWords = prompt.split(' ').filter((word: string) => word.length > 3);
+
       console.log('🔍 [VisualConsistencyMetric] Input words (>3 chars):', inputWords.length);
       console.log('🔍 [VisualConsistencyMetric] Prompt words (>3 chars):', promptWords.length);
-      
+
       let matchingWords = 0;
       for (const word of inputWords) {
         if (promptWords.includes(word)) {
@@ -151,20 +177,20 @@ export class VisualConsistencyMetric {
           console.log(`✅ [VisualConsistencyMetric] Found matching word: "${word}"`);
         }
       }
-      
+
       const consistencyScore = inputWords.length > 0 ? matchingWords / inputWords.length : 0;
       console.log('🔍 [VisualConsistencyMetric] Consistency score:', consistencyScore, `(${matchingWords}/${inputWords.length} words match)`);
-      
+
       // Check for visual elements consistency
       const hasVisualElements = /character|scene|setting|object|prop|environment|background/i.test(prompt);
       const hasInputElements = /character|scene|setting|object|prop|environment|background/i.test(inputLower);
-      
+
       console.log('🔍 [VisualConsistencyMetric] Visual elements check:', {
         hasVisualElements, hasInputElements
       });
-      
+
       const visualConsistency = (hasVisualElements && hasInputElements) ? 1 : 0.5;
-      
+
       const finalScore = (consistencyScore + visualConsistency) / 2;
       console.log('🔍 [VisualConsistencyMetric] Final score:', finalScore);
 
@@ -177,7 +203,8 @@ export class VisualConsistencyMetric {
           consistencyScore,
           visualConsistency,
           hasVisualElements,
-          hasInputElements
+          hasInputElements,
+          totalImages: parsed.images.length
         }
       };
     } catch (error) {
@@ -197,24 +224,30 @@ export class VisualConsistencyMetric {
 export class TechnicalSpecsMetric {
   async measure(input: string, output: string): Promise<MetricResult> {
     console.log('🔍 [TechnicalSpecsMetric] Starting evaluation...');
-    
+
     try {
       const jsonOutput = extractJSON(output);
       const parsed = JSON.parse(jsonOutput);
       console.log('🔍 [TechnicalSpecsMetric] JSON parsed successfully');
-      
-      if (!parsed.imagePrompt || typeof parsed.imagePrompt !== 'string') {
-        console.log('❌ [TechnicalSpecsMetric] No image prompt found in output');
-        return { score: 0, info: { reason: 'No image prompt found in output' } };
+
+      if (!parsed.images || !Array.isArray(parsed.images) || parsed.images.length === 0) {
+        console.log('❌ [TechnicalSpecsMetric] No images array found in output');
+        return { score: 0, info: { reason: 'No images array found in output' } };
       }
 
-      const prompt = parsed.imagePrompt;
+      const firstImage = parsed.images[0];
+      if (!firstImage.prompt || typeof firstImage.prompt !== 'string') {
+        console.log('❌ [TechnicalSpecsMetric] No prompt found in first image');
+        return { score: 0, info: { reason: 'No prompt found in first image' } };
+      }
+
+      const prompt = firstImage.prompt;
       console.log('🔍 [TechnicalSpecsMetric] Image prompt:', prompt.substring(0, 100) + '...');
-      
+
       let score = 0;
       let totalChecks = 0;
 
-      // Check for technical specifications
+      // Check for technical specifications in prompt
       const hasResolution = /4k|8k|high resolution|hd|ultra hd|megapixel/i.test(prompt);
       if (hasResolution) score += 0.3;
       totalChecks++;
@@ -235,6 +268,17 @@ export class TechnicalSpecsMetric {
       totalChecks++;
       console.log('🔍 [TechnicalSpecsMetric] Has aspect ratio:', hasAspectRatio);
 
+      // Check metadata if available
+      if (firstImage.metadata) {
+        const metadata = firstImage.metadata;
+        console.log('🔍 [TechnicalSpecsMetric] Metadata found:', metadata);
+        
+        if (metadata.quality) score += 0.1;
+        if (metadata.aspectRatio) score += 0.1;
+        if (metadata.model) score += 0.1;
+        totalChecks += 3;
+      }
+
       const finalScore = totalChecks > 0 ? score / totalChecks : 0;
       console.log('🔍 [TechnicalSpecsMetric] Final score:', finalScore);
 
@@ -246,7 +290,9 @@ export class TechnicalSpecsMetric {
           hasQuality,
           hasFormat,
           hasAspectRatio,
-          totalChecks
+          hasMetadata: !!firstImage.metadata,
+          totalChecks,
+          totalImages: parsed.images.length
         }
       };
     } catch (error) {
@@ -266,20 +312,26 @@ export class TechnicalSpecsMetric {
 export class CreativeElementsMetric {
   async measure(input: string, output: string): Promise<MetricResult> {
     console.log('🔍 [CreativeElementsMetric] Starting evaluation...');
-    
+
     try {
       const jsonOutput = extractJSON(output);
       const parsed = JSON.parse(jsonOutput);
       console.log('🔍 [CreativeElementsMetric] JSON parsed successfully');
-      
-      if (!parsed.imagePrompt || typeof parsed.imagePrompt !== 'string') {
-        console.log('❌ [CreativeElementsMetric] No image prompt found in output');
-        return { score: 0, info: { reason: 'No image prompt found in output' } };
+
+      if (!parsed.images || !Array.isArray(parsed.images) || parsed.images.length === 0) {
+        console.log('❌ [CreativeElementsMetric] No images array found in output');
+        return { score: 0, info: { reason: 'No images array found in output' } };
       }
 
-      const prompt = parsed.imagePrompt;
+      const firstImage = parsed.images[0];
+      if (!firstImage.prompt || typeof firstImage.prompt !== 'string') {
+        console.log('❌ [CreativeElementsMetric] No prompt found in first image');
+        return { score: 0, info: { reason: 'No prompt found in first image' } };
+      }
+
+      const prompt = firstImage.prompt;
       console.log('🔍 [CreativeElementsMetric] Image prompt:', prompt.substring(0, 100) + '...');
-      
+
       let score = 0;
       let totalChecks = 0;
 
@@ -315,7 +367,8 @@ export class CreativeElementsMetric {
           hasEmotion,
           hasStorytelling,
           hasAesthetics,
-          totalChecks
+          totalChecks,
+          totalImages: parsed.images.length
         }
       };
     } catch (error) {
@@ -335,20 +388,26 @@ export class CreativeElementsMetric {
 export class CharacterFocusMetric {
   async measure(input: string, output: string): Promise<MetricResult> {
     console.log('🔍 [CharacterFocusMetric] Starting evaluation...');
-    
+
     try {
       const jsonOutput = extractJSON(output);
       const parsed = JSON.parse(jsonOutput);
       console.log('🔍 [CharacterFocusMetric] JSON parsed successfully');
-      
-      if (!parsed.imagePrompt || typeof parsed.imagePrompt !== 'string') {
-        console.log('❌ [CharacterFocusMetric] No image prompt found in output');
-        return { score: 0, info: { reason: 'No image prompt found in output' } };
+
+      if (!parsed.images || !Array.isArray(parsed.images) || parsed.images.length === 0) {
+        console.log('❌ [CharacterFocusMetric] No images array found in output');
+        return { score: 0, info: { reason: 'No images array found in output' } };
       }
 
-      const prompt = parsed.imagePrompt;
+      const firstImage = parsed.images[0];
+      if (!firstImage.prompt || typeof firstImage.prompt !== 'string') {
+        console.log('❌ [CharacterFocusMetric] No prompt found in first image');
+        return { score: 0, info: { reason: 'No prompt found in first image' } };
+      }
+
+      const prompt = firstImage.prompt;
       console.log('🔍 [CharacterFocusMetric] Image prompt:', prompt.substring(0, 100) + '...');
-      
+
       let score = 0;
       let totalChecks = 0;
 
@@ -378,7 +437,8 @@ export class CharacterFocusMetric {
           hasCharacter,
           hasCharacterDetails,
           hasCharacterAction,
-          totalChecks
+          totalChecks,
+          totalImages: parsed.images.length
         }
       };
     } catch (error) {
