@@ -2,22 +2,52 @@ import { NewAgentNetwork } from '@mastra/core/network/vNext';
 import { AgentNetwork } from '@mastra/core/network';
 import { openai } from '@ai-sdk/openai';
 import { google } from '@ai-sdk/google';
-import { scriptGeneratorAgent } from './agents/script-generator-agent';
-import { storyboardAgent } from './agents/storyboard-agent';
-import { imageGeneratorAgent } from './agents/image-generator-agent';
-import { exportAgent } from './agents/export-agent';
-import { pdfUploadAgent } from './agents/pdf-upload-agent';
-import { createMasterMemory } from './memory-config';
+import { scriptGeneratorAgent } from '../agents/script-generator-agent';
+import { storyboardAgent } from '../agents/storyboard-agent';
+import { imageGeneratorAgent } from '../agents/image-generator-agent';
+import { exportAgent } from '../agents/export-agent';
+import { pdfUploadAgent } from '../agents/pdf-upload-agent';
+import { createMasterMemory } from '../memory-config';
 import { LibSQLStore, LibSQLVector } from '@mastra/libsql';
 import { Memory } from '@mastra/memory';
 import { RuntimeContext } from '@mastra/core/runtime-context';
-import { runAutomatedAgentNetwork, automatedAgentNetworkWorkflow } from './workflows/agent-network-automated-workflow';
+
 
 /**
  * Helper function to create runtime context for network calls
  */
 function createRuntimeContext() {
   return new RuntimeContext();
+}
+
+/**
+ * Helper function to reset network memory context
+ * Use this when you want to start fresh without previous context
+ */
+export async function resetNetworkContext(threadId?: string) {
+  if (threadId) {
+    // Clear specific thread context
+    await networkMemory.deleteMessages([threadId]);
+  }
+  // Create new runtime context
+  return createRuntimeContext();
+}
+
+/**
+ * Helper function to summarize long scripts to prevent truncation
+ */
+export async function summarizeScriptForStoryboard(script: string): Promise<string> {
+  const runtimeContext = createRuntimeContext();
+
+  // Use the script generator agent to create a concise summary
+  const result = await scriptGeneratorAgent.generate(
+    `Summarize this script in a concise format suitable for storyboard creation.
+    Preserve all character names, locations, and key story beats.
+    Keep it under 500 words. Script: ${script}`,
+    { runtimeContext }
+  );
+
+  return result.text;
 }
 
 /**
@@ -46,18 +76,49 @@ const networkMemory = new Memory({
   }),
   embedder: openai.embedding('text-embedding-3-small'),
   options: {
-    lastMessages: 20,
+    lastMessages: 5, // Reduced from 20 to prevent context overflow
     semanticRecall: {
-      topK: 8,
+      topK: 3, // Reduced from 8
       messageRange: {
-        before: 3,
-        after: 2,
+        before: 1, // Reduced from 3
+        after: 1,  // Reduced from 2
       },
       scope: 'resource',
     },
-    // Disable working memory temporarily to avoid missing tool error
+    // Enable working memory for persistent user context
     workingMemory: {
-      enabled: false,
+      enabled: true,
+      template: `# Master Agent Memory
+
+## Current Project
+- **Project Type**: Storyboard Generation
+- **User Request**:
+- **Current Phase**: [Script/Storyboard/Images/Export]
+- **Progress**: [0-100%]
+
+## Agent Coordination
+- **Active Agents**:
+- **Completed Tasks**:
+- **Pending Tasks**:
+- **Error Handling**:
+
+## User Context
+- **Preferred Styles**:
+- **Story Preferences**:
+- **Technical Requirements**:
+- **Export Format**:
+
+## Workflow State
+- **Script Generated**: [Yes/No]
+- **Storyboard Created**: [Yes/No]
+- **Images Generated**: [Yes/No]
+- **Export Ready**: [Yes/No]
+
+## Quality Control
+- **Style Consistency**:
+- **Character Continuity**:
+- **Narrative Flow**:
+- **Technical Issues**: `,
     },
     // Thread configuration
     threads: {
@@ -79,89 +140,37 @@ export const storyboardNetwork = new NewAgentNetwork({
   },
   model: google('gemini-2.5-flash'),
   memory: networkMemory, // Use full memory capabilities with working memory
-  instructions: `You are a helpful assistant and comprehensive storyboard generation system with FULL CAPABILITIES for creating complete storyboards from story ideas. You can generate images, create PDFs, and upload to Google Drive.
+  instructions: `You are a comprehensive storyboard generation system with FULL CAPABILITIES for creating complete storyboards from story ideas. You can generate images, create PDFs, and upload to Google Drive.
 
-## 🚨 IMMEDIATE RESPONSE RULE
-**When users ask "what can you do", "what are your capabilities", or similar questions about your abilities, respond immediately with your capabilities list. Do NOT wait for any tools, actions, or confirmations.**
+## Context Management
+- Keep agent interactions concise and focused
+- Avoid repeating information from previous steps
+- When calling agents, provide only essential context
+- Use clear, direct prompts to minimize token usage
+- If an agent's output is truncated, request a more concise version
+- For storyboard generation, ensure complete scene descriptions are provided
+- If output is cut off, ask the agent to continue from where it left off
 
-## 🎯 CRITICAL RESPONSE INSTRUCTIONS
+## Truncation Prevention
+- Monitor response lengths and summarize long content before passing to next agent
+- If storyboard agent output is truncated, it may create incorrect stories
+- Always verify that character names and story elements match the original script
+- Use script summarization for scripts longer than 1000 words
 
-### 1. When User Asks "What Can You Do?" or Similar Questions
-**ALWAYS respond with your complete capabilities list. DO NOT wait for any action - provide the response immediately:**
+## Agent Call Tracking
+- **CRITICAL**: Track which agents you have already called in this session
+- Call each agent EXACTLY ONCE per pipeline execution
+- Do NOT repeat calls to the same agent
+- After calling an agent, mark it as "completed" in your tracking
+- If you see an agent has already been called, move to the next step
+- Check your conversation history to see which agents have already been used
 
-🎬 **AI Storyboard Generator - Complete Capabilities**
-
-**📝 Script Generation**
-- Create complete screenplays from story ideas
-- Support multiple genres (drama, comedy, action, fantasy, sci-fi, etc.)
-- Generate 5-scene structured scripts with clear character development
-- Include dialogue, scene descriptions, and character actions
-
-**🎨 Storyboard Creation**
-- Convert scripts into visual storyboards with detailed scenes
-- Create scene-by-scene breakdowns with image prompts
-- Include character descriptions, locations, and time of day
-- Maintain narrative flow and character consistency
-
-**🖼️ Image Generation**
-- Generate high-quality images for each storyboard scene
-- Support 20+ art styles: Cinematic, Anime, Ghibli-esque, Disney-esque, Comic Book, Watercolor, Oil Painting, Sketch, Pixel Art, Cyberpunk, Steampunk, Fantasy, Sci-Fi, Horror, Noir, Pop Art, Abstract, Impressionistic, Surreal, Photorealistic
-- Use Google Imagen for professional-quality visuals
-- Customizable aspect ratios (16:9 cinematic, 4:3 traditional)
-
-**📄 PDF Export**
-- Create professional PDF storyboards with embedded images
-- Include scene descriptions, character details, and metadata
-- Support multiple export formats (PDF, JSON, HTML, Markdown)
-- Generate production-ready storyboard documents
-
-**☁️ Cloud Upload**
-- Upload completed PDFs to AWS S3 storage
-- Transfer files to Google Drive via Zapier integration
-- Send Slack notifications for upload status
-- Provide direct download links for easy sharing
-
-**🚀 Complete Pipeline**
-- End-to-end automation: Story Idea → Script → Storyboard → Images → PDF → Cloud Upload
-- Two modes: Interactive step-by-step or automatic complete pipeline
-- Quality evaluation system for continuous improvement
-
-**💡 How to Get Started:**
-- Provide a story idea and I'll create a complete storyboard
-- Ask for specific steps like "create a story" or "generate images"
-- Request the full pipeline for automatic end-to-end generation
-
-**CRITICAL:** When asked about capabilities, respond with this information immediately without waiting for any tools or actions.
-
-### 2. When User Asks for Specific Steps (Create Story, Storyboard, Image, etc.)
-**ALWAYS route to the appropriate agent and execute the work:**
-
-**For "Create a story" or "Generate script":**
-- Route to Script Generator Agent
-- Execute script generation immediately
-- Return the complete screenplay
-
-**For "Create storyboard" or "Make storyboard":**
-- Route to Storyboard Agent
-- Execute storyboard creation immediately
-- Return the visual storyboard with scenes
-
-**For "Generate images" or "Create images":**
-- Route to Image Generator Agent
-- Execute image generation immediately
-- Return the generated images for scenes
-
-**For "Export PDF" or "Create PDF":**
-- Route to Export Agent
-- Execute PDF export immediately
-- Return the PDF file path
-
-**For "Upload to cloud" or "Upload to Google Drive":**
-- Route to PDF Upload Agent
-- Execute cloud upload immediately
-- Return S3 and Google Drive URLs
-
-**IMPORTANT:** When routing to specific agents, DO NOT ask for confirmation - execute the work immediately and return the results.
+## Script-to-Storyboard Process
+- When passing a script to the storyboard agent, include the complete script content
+- Ensure the storyboard agent receives the full script with all characters and scenes
+- The storyboard agent must convert the provided script, not create a new story
+- If the script is very long, summarize it first to prevent truncation
+- Always preserve character names and key story elements when summarizing
 
 ## Your Complete Capabilities
 
@@ -214,13 +223,21 @@ When users want everything done automatically, complete ALL steps without stoppi
 ## Orchestration Flow for Automatic Mode
 When in automatic mode, you must coordinate ALL agents in sequence:
 1. Call Script Generator Agent → Get screenplay
-2. Pass screenplay to Storyboard Agent → Get storyboard
-3. Pass storyboard to Image Generator Agent → Get images
-4. Pass storyboard + images to Export Agent → Get PDF
-5. Pass PDF to PDF Upload Agent → Upload to S3 and Google Drive
-6. Return final PDF path, cloud URLs, and summary
+2. **If screenplay is long (>1000 words), summarize it first to prevent truncation**
+3. Pass screenplay (or summary) to Storyboard Agent → Get storyboard
+4. Pass storyboard to Image Generator Agent → Get images (ONLY ONCE)
+5. Pass storyboard + images to Export Agent → Get PDF
+6. Pass PDF to PDF Upload Agent → Upload to S3 and Google Drive
+7. Return final PDF path, cloud URLs, and summary
 
-**Never stop after calling just one agent. Always complete the full pipeline.**
+**CRITICAL RULES:**
+- Call each agent EXACTLY ONCE in the sequence
+- Do NOT repeat agent calls
+- Do NOT call the same agent multiple times
+- Complete the full pipeline before stopping
+- Track which agents have been called to avoid duplicates
+- **BEFORE calling any agent, check if it has already been called in this conversation**
+- If an agent has already been called, skip to the next agent in the sequence
 
 ## Execution Flow for Both Modes
 
@@ -283,14 +300,28 @@ export const storyboardNetworkLegacy = new AgentNetwork({
 ## Workflow Process
 1. **Script Generation** - Route story ideas to the script generator agent
 2. **Storyboard Creation** - Send completed scripts to the storyboard agent
-3. **Image Generation** - Coordinate image creation for storyboard scenes (default: 5 images per scene)
+3. **Image Generation** - Coordinate image creation for storyboard scenes (default: 1 image per scene)
 4. **Export** - Handle final export and delivery
+5. **PDF Upload** - Upload generated PDFs to S3 and Google Drive (when requested)
+
+## Image Generation Process
+- Generate 1 image per scene by default
+- Use the actual generated filename with timestamp (e.g., "scene_1_1754657736229.png")
+- Update the storyboard data with the correct image paths
+- Do NOT use placeholder paths like "scene_1.png"
 
 ## Available Agents
 1. **Script Generator Agent**: Creates complete screenplays from story ideas using Google Gemini
 2. **Storyboard Agent**: Converts scripts to visual storyboards with character consistency using Google Gemini
-3. **Image Generator Agent**: Creates images for storyboard scenes with various art styles using Google Imagen (default: 5 images per scene)
+3. **Image Generator Agent**: Creates images for storyboard scenes with various art styles using Google Imagen (default: 1 image per scene)
 4. **Export Agent**: Exports storyboards in various formats (PDF, JSON, etc.) using Google Gemini
+5. **PDF Upload Agent**: Uploads generated PDFs to S3 and Google Drive via Zapier integration
+
+## Image Path Handling
+- When generating images, use the actual generated filenames with timestamps
+- Do NOT use simple paths like "scene_1.png" - use the full generated filename
+- The image generation tool creates files with timestamps (e.g., "scene_1_1754657736229.png")
+- Always use the complete filename returned by the image generation tool
 
 ## Available Image Styles
 When generating images, use these exact style names:
@@ -318,7 +349,7 @@ When generating images, use these exact style names:
 
 Always strive to provide a smooth, coordinated experience for storyboard creation.`,
   model: google('gemini-2.5-flash'),
-  agents: [scriptGeneratorAgent, storyboardAgent, imageGeneratorAgent, exportAgent],
+  agents: [scriptGeneratorAgent, storyboardAgent, imageGeneratorAgent, exportAgent, pdfUploadAgent],
 });
 
 /**
@@ -344,7 +375,11 @@ export async function generateCompleteStoryboard(storyIdea: string, options?: {
     `Please create a script, then convert it to a storyboard with ${options?.numberOfImages || 6} scenes, ` +
     `using ${options?.style || 'Cinematic'} style, and export it as ${options?.exportFormat || 'pdf'}. ` +
     `Title: ${options?.title || 'Generated Storyboard'}. Complete the entire pipeline automatically.`,
-    { runtimeContext }
+    {
+      runtimeContext,
+      resourceId: options?.resourceId || 'default-user',
+      threadId: options?.threadId || 'storyboard-generation'
+    }
   );
 
   return stream;
@@ -395,7 +430,7 @@ export async function createStoryboard(script: string, options?: {
 /**
  * Generate images for storyboard scenes with streaming
  */
-export async function generateStoryboardImages(storyboardData: any, options?: {
+export async function generateStoryboardImages(storyboardData: import('../schemas/storyboard-schema').StoryboardData, options?: {
   style?: string;
   quality?: 'standard' | 'high';
 }) {
@@ -413,7 +448,7 @@ export async function generateStoryboardImages(storyboardData: any, options?: {
 /**
  * Export storyboard to various formats with streaming
  */
-export async function exportStoryboard(storyboardData: any, options?: {
+export async function exportStoryboard(storyboardData: import('../schemas/storyboard-schema').StoryboardData, options?: {
   format?: 'pdf' | 'json' | 'html' | 'markdown';
   title?: string;
   layout?: string;
@@ -440,6 +475,8 @@ export async function storyIdeaToPDF(storyIdea: string, options?: {
   title?: string;
   genre?: string;
   tone?: string;
+  resourceId?: string;
+  threadId?: string;
 }) {
   const runtimeContext = createRuntimeContext();
   const stream = await storyboardNetwork.stream(
@@ -448,7 +485,11 @@ export async function storyIdeaToPDF(storyIdea: string, options?: {
     `Genre: ${options?.genre || 'drama'}, Tone: ${options?.tone || 'dramatic'}. ` +
     `Create storyboard with ${options?.numberOfImages || 6} scenes. ` +
     `Please determine if the user wants step-by-step interaction or automatic completion based on their request.`,
-    { runtimeContext }
+    {
+      runtimeContext,
+      resourceId: options?.resourceId || 'default-user',
+      threadId: options?.threadId || 'storyboard-pdf'
+    }
   );
 
   return stream;
@@ -621,33 +662,6 @@ export async function scriptToPDFSync(script: string, options?: {
   return result;
 }
 
-/**
- * Automated Agent Network - Complete Pipeline
- * This function runs the entire agent network automatically from story idea to PDF
- */
-export async function automatedStoryIdeaToPDF(storyIdea: string, options?: {
-  style?: string;
-  numberOfImages?: number;
-  title?: string;
-  genre?: string;
-  tone?: string;
-}) {
-  console.log('🚀 [Agent Network] Starting automated pipeline...');
 
-  try {
-    const result = await runAutomatedAgentNetwork(storyIdea, options);
 
-    console.log('🎉 [Agent Network] Automated pipeline completed successfully!');
-    console.log(`📄 Final PDF: ${result.pdfPath}`);
-    console.log(`📊 Summary: ${result.summary.totalScenes} scenes, ${result.summary.totalImages} images`);
-
-    return result;
-  } catch (error) {
-    console.error('❌ [Agent Network] Automated pipeline failed:', error);
-    throw error;
-  }
-}
-
-// Export the automated workflow for direct use
-export { runAutomatedAgentNetwork, automatedAgentNetworkWorkflow } from './workflows/agent-network-automated-workflow';
 

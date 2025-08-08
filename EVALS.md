@@ -1,206 +1,90 @@
-# Mastra Evaluation System
+# Evaluation System (Storyboards & Scripts)
 
-## Overview
+This project implements a lightweight, heuristic-based evaluation suite focused on two agents: storyboard and script. It provides 10 implemented metrics (5 per agent) that score outputs between 0.0–1.0 without requiring LLM-as-judge calls.
 
-The AI Story Board Generator project includes a comprehensive evaluation system built on Mastra Evals to measure the quality and effectiveness of AI agent outputs. The system uses heuristic-based metrics to evaluate different aspects of generated content without requiring additional LLM calls.
+## Implemented Metrics
 
-## Available Evaluation Metrics
+### Storyboard Metrics (`src/mastra/evals/storyboard-evals.ts`)
+- **Structure**: Valid JSON with required fields per scene (`sceneNumber`, `storyContent`, `imagePrompt`, `location`, `timeOfDay`).
+- **Visual Prompt Quality**: Prompt depth (length), camera/angle, lighting, mood, character positioning.
+- **Story Content Completeness**: Presence and length of `storyContent` across scenes.
+- **Character Consistency**: Overlap of character mentions between adjacent scenes.
+- **Narrative Flow**: Sequential scene numbering, content presence, transition cues (e.g., then/next/later).
 
-### Storyboard-Specific Metrics (`src/mastra/evals/storyboard-evals.ts`)
+### Script Metrics (`src/mastra/evals/script-evals.ts`)
+- **Structure**: Required top-level fields (`title`, `genre`, `logline`, `characters[]`, `scenes[]`).
+- **Dialogue Quality**: Presence/length of dialogue; quotes, character name markers, emotion/variety cues.
+- **Character Development**: Name/description/role completeness with a per-character score.
+- **Plot Coherence**: Sequential scenes, content presence, transition cues.
+- **Genre Alignment**: Keyword alignment for common genres (drama, comedy, action, fantasy, horror, romance, sci‑fi).
 
-- **StoryboardStructureMetric**: Validates JSON structure and required fields
-- **VisualPromptQualityMetric**: Assesses visual description quality and detail
-- **StoryContentCompletenessMetric**: Checks for complete story elements
-- **CharacterConsistencyMetric**: Evaluates character development consistency
-- **NarrativeFlowMetric**: Measures story flow and pacing
+## Scoring (0.0–1.0)
+- **0.9–1.0**: Excellent
+- **0.8–0.89**: Good
+- **0.7–0.79**: Acceptable
+- **0.6–0.69**: Needs improvement
+- **< 0.6**: Poor
 
-### Script Generator Metrics (`src/mastra/evals/script-evals.ts`)
+## How to Run
 
-- **ScriptStructureMetric**: Validates script format and scene structure
-- **DialogueQualityMetric**: Assesses dialogue naturalness and character voice
-- **CharacterDevelopmentMetric**: Evaluates character arc and development
-- **PlotCoherenceMetric**: Measures story logic and plot consistency
-- **GenreAlignmentMetric**: Checks genre-specific elements and themes
-
-### Image Generator Metrics (`src/mastra/evals/image-evals.ts`)
-
-- **ImagePromptQualityMetric**: Evaluates prompt specificity and detail
-- **VisualConsistencyMetric**: Assesses visual style consistency
-- **TechnicalSpecsMetric**: Validates technical specifications
-- **CreativeElementsMetric**: Measures creative and artistic elements
-- **CharacterFocusMetric**: Evaluates character portrayal accuracy
-
-### Export Metrics (`src/mastra/evals/export-evals.ts`)
-
-- **ExportFormatMetric**: Validates export format compliance
-- **ExportCompletenessMetric**: Checks data completeness
-- **ExportStructureMetric**: Evaluates structural organization
-- **ExportQualityMetric**: Assesses overall export quality
-- **ExportReadinessMetric**: Measures production readiness
-
-### PDF Upload Metrics (`src/mastra/evals/pdf-evals.ts`)
-
-- **PDFUploadValidationMetric**: Validates PDF upload process
-- **PDFContentExtractionMetric**: Evaluates content extraction quality
-- **PDFStructureAnalysisMetric**: Assesses structure analysis accuracy
-- **PDFProcessingQualityMetric**: Measures processing efficiency
-- **PDFDataConversionMetric**: Evaluates data conversion accuracy
-
-## Technical Implementation
-
-### JSON Extraction Helper
-
-All evaluation metrics include a helper function to handle JSON wrapped in markdown code blocks:
-
-```typescript
-function extractJSON(output: string): string {
-  // Remove markdown code block markers
-  let cleaned = output.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
-  return cleaned;
-}
+### Easiest: run the example script
+```bash
+# From project root (ensure OPENAI_API_KEY and GOOGLE_API_KEY are set)
+npx tsx examples/evals.ts
 ```
 
-### Detailed Logging
-
-Each metric includes comprehensive logging for debugging and transparency:
-
-```typescript
-console.log('🔍 [MetricName] Starting evaluation...');
-console.log('🔍 [MetricName] Input:', input.substring(0, 100) + '...');
-console.log('🔍 [MetricName] Output length:', output.length);
-console.log('🔍 [MetricName] Parsed data:', parsed);
-```
-
-### Heuristic-Based Evaluation
-
-Metrics use rule-based logic instead of LLM-as-judge for efficiency:
-
-- **Structure Validation**: Checks JSON format and required fields
-- **Content Analysis**: Uses regex patterns and keyword matching
-- **Quality Scoring**: Implements scoring algorithms based on content characteristics
-- **Consistency Checks**: Validates patterns across multiple elements
-
-## Integration
-
-### Agent Configuration
-
-Each agent includes evaluation metrics in its configuration:
-
-```typescript
-import { storyboardSpecificEvals } from '../evals/storyboard-evals';
-
-export const storyboardAgent = createAgent({
-  name: 'storyboard-creator',
-  evals: storyboardSpecificEvals,
-  // ... other configuration
-});
-```
-
-### Available Agents with Evals
-
-1. **Storyboard Creator Agent** (`storyboard-agent.ts`)
-   - Uses: `storyboardSpecificEvals`
-   - Evaluates: Storyboard structure, visual prompts, content completeness
-
-2. **Script Generator Agent** (`script-generator-agent.ts`)
-   - Uses: `scriptSpecificEvals`
-   - Evaluates: Script structure, dialogue quality, character development
-
-3. **Image Generator Agent** (`image-generator-agent.ts`)
-   - Uses: `imageSpecificEvals`
-   - Evaluates: Image prompts, visual consistency, technical specs
-
-4. **Export Specialist Agent** (`export-agent.ts`)
-   - Uses: `exportSpecificEvals`
-   - Evaluates: Export formats, completeness, quality
-
-5. **PDF Upload Agent** (`pdf-upload-agent.ts`)
-   - Uses: `pdfSpecificEvals`
-   - Evaluates: PDF processing, content extraction, data conversion
-
-## Usage
-
-### Running Individual Metrics
-
-```typescript
+### Direct metric call
+```ts
 import { storyboardSpecificEvals } from './src/mastra/evals/storyboard-evals';
 
-const metric = storyboardSpecificEvals.storyboardStructure;
-const result = await metric.measure(input, output);
-console.log('Score:', result.score);
-```
-
-### Testing Evaluation System
-
-```typescript
-// Test file: test-evals-demo.ts
-import { storyboardSpecificEvals, scriptSpecificEvals } from './src/mastra/evals';
-
-// Test with sample data
-const sampleOutput = `\`\`\`json
-{
-  "scenes": [
+const input = 'Create a 5-scene storyboard about a mountain rescue.';
+const output = JSON.stringify({
+  scenes: [
     {
-      "sceneNumber": "1",
-      "description": "A young woman stands at a crossroads",
-      "visualElements": ["road", "forest", "sunset"]
-    }
-  ]
-}
-\`\`\``;
+      sceneNumber: 1,
+      storyContent: 'Rescuers gather at dawn, preparing gear.',
+      imagePrompt: 'Wide shot, cold blue light, snow, headlamps.',
+      location: 'Base camp',
+      timeOfDay: 'Dawn',
+    },
+  ],
+});
 
-const result = await storyboardSpecificEvals.storyboardStructure.measure(
-  "Create a storyboard for a drama",
-  sampleOutput
-);
+const result = await storyboardSpecificEvals.structure.measure(input, output);
+console.log('Structure Score:', result.score, result.info);
 ```
 
-### CI/CD Integration
+### Script eval example
+```ts
+import { scriptSpecificEvals } from './src/mastra/evals/script-evals';
 
-The evaluation system is designed to integrate with CI/CD pipelines:
+const input = 'Write a short sci-fi script about a time loop in a subway.';
+const output = JSON.stringify({
+  title: 'Subway Loop',
+  genre: 'sci-fi',
+  logline: 'A commuter relives the same ride and must break the loop.',
+  characters: [{ name: 'Alex', description: 'Observant and anxious', role: 'Protagonist' }],
+  scenes: [
+    { sceneNumber: 1, description: 'Train departs.', dialogue: 'ALEX: Not again...' },
+    { sceneNumber: 2, description: 'Realization.', dialogue: 'ALEX: This is repeating.' },
+  ],
+});
 
-```typescript
-// ci-setup.ts provides automated evaluation
-import { runCICDEvals } from './src/mastra/evals/ci-setup';
-
-// Run evaluations in CI environment
-const results = await runCICDEvals();
+const genre = await scriptSpecificEvals.genreAlignment.measure(input, output);
+console.log('Genre Alignment:', genre.score, genre.info);
 ```
 
-## Metric Scoring
+## Notes & Tips
+- Metrics are heuristic and transparent—good for fast feedback.
+- Outputs often come wrapped in Markdown code blocks; metrics auto-strip those during JSON parsing.
+- For character consistency and flow, ensure scenes have meaningful `storyContent` and sequential `sceneNumber`.
+- For dialogue quality, include quotes, ALL‑CAPS speaker labels (if using screenplay style), and sentence variety.
 
-All metrics return scores between 0.0 and 1.0:
+## Requirements
+- Env vars required for project runtime: `OPENAI_API_KEY`, `GOOGLE_API_KEY`.
+- You can run metrics on any output string that matches the expected JSON shape.
 
-- **0.0-0.3**: Poor quality, needs significant improvement
-- **0.4-0.6**: Acceptable quality, minor improvements needed
-- **0.7-0.8**: Good quality, meets most requirements
-- **0.9-1.0**: Excellent quality, exceeds expectations
-
-## Debugging
-
-### Common Issues
-
-1. **JSON Parsing Errors**: Usually caused by markdown code blocks
-   - Solution: Use `extractJSON()` helper function
-
-2. **Zero Scores**: Often due to strict validation rules
-   - Check: Field names, data types, required properties
-
-3. **Inconsistent Results**: May indicate data format variations
-   - Enable: Detailed logging for investigation
-
-### Logging Levels
-
-The evaluation system provides detailed logging:
-
-- **Input/Output Preview**: Shows first 100 characters
-- **Parsing Status**: Confirms JSON parsing success
-- **Field Validation**: Logs individual field checks
-- **Score Calculation**: Shows scoring breakdown
-
-## Future Enhancements
-
-- **Custom Metric Creation**: Framework for adding new metrics
-- **Performance Optimization**: Caching and batch processing
-- **Advanced Analytics**: Trend analysis and quality tracking
-- **Integration Testing**: Automated test suites for metrics
+## Not Included (by design)
+- No LLM-as-judge scoring.
+- No separate CI/CLI harness in this repo (use `examples/evals.ts`).
+- No image/export/PDF agent-specific evals at this time.

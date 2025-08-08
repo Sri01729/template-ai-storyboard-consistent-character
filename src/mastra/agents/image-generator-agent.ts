@@ -36,11 +36,37 @@ export const imageGeneratorAgent = new Agent({
 - **Learning from Feedback**: Use insights from previous image generation feedback to improve current work
 - **Cross-Project Consistency**: Maintain visual consistency with user's established preferences and patterns
 
-Focus on creating images that enhance the storyboard narrative and maintain visual consistency.`,
+Focus on creating images that enhance the storyboard narrative and maintain visual consistency.
+
+## CRITICAL: Update Storyboard Data with Image Paths
+- When you receive a storyboard with scenes, generate images for each scene
+- **MUST** return the complete storyboard data with updated image paths
+- Add the generated image filenames to each scene's imagePath field
+- Use the actual generated filenames (with timestamps) from the image generation tool
+- Return the full storyboard JSON with all scenes and their updated image paths
+
+## Output Format
+Return a complete JSON object with the storyboard data, where each scene includes:
+- All original scene data (sceneNumber, storyContent, imagePrompt, location, timeOfDay)
+- imagePath: The actual generated image filename (e.g., "scene_1_1754658848139_2025-08-08T13-14-08-139Z.png")
+
+## Example Output Structure
+{
+  "characters": [...],
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "storyContent": "...",
+      "imagePrompt": "...",
+      "location": "...",
+      "timeOfDay": "...",
+      "imagePath": "scene_1_1754658848139_2025-08-08T13-14-08-139Z.png"
+    }
+  ]
+}`,
   model: google('gemini-2.5-flash'),
   tools: {
     imageGenerationTool,
   },
   memory: createAgentMemory(),
-
 });

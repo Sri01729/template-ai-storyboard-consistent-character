@@ -4,6 +4,7 @@ import { RuntimeContext } from '@mastra/core/runtime-context';
 import { imageGenerationTool } from '../tools/image-generation-tool';
 import { pdfExportTool } from '../tools/pdf-export-tool';
 import { pdfUploadTool } from '../tools/pdf-upload-tool.js';
+import { characterConsistencyTool } from '../tools/character-consistency-tool';
 
 // Step 1: Generate Script from Story Idea
 const generateScriptStep = createStep({
@@ -165,7 +166,7 @@ const convertToStoryboardStep = createStep({
       storyboard: {
         title: inputData.title,
         scenes: storyboardData.scenes,
-        characters: [],
+        characters: storyboardData.characters || [],
       },
       style: inputData.style,
     };
@@ -225,12 +226,44 @@ const generateImagesStep = createStep({
           .trim()
           .substring(0, 200); // Limit length for better image generation
 
-        console.log(`🎨 [Automated Workflow] Using cleaned image prompt: ${imagePrompt.substring(0, 80)}...`);
+        // ALWAYS enforce character consistency using the tool
+        const characterList = Array.isArray(inputData.storyboard.characters)
+          ? inputData.storyboard.characters.map((c: any) => ({ name: c.name, description: c.description }))
+          : [];
+
+        let finalPrompt = imagePrompt;
+
+        // CRITICAL: Always apply character consistency, even if no characters found
+        try {
+          const consistencyResult = await characterConsistencyTool.execute({
+            context: {
+              characters: characterList,
+              scenePrompt: imagePrompt,
+              style: inputData.style,
+            },
+            runtimeContext,
+          });
+
+          if (consistencyResult?.consistentPrompt) {
+            finalPrompt = consistencyResult.consistentPrompt;
+            console.log(`🧩 [Character Consistency] Applied consistent prompt for Scene ${scene.sceneNumber}`);
+            if (Array.isArray(consistencyResult.characterAnchors) && consistencyResult.characterAnchors.length) {
+              console.log(`🔗 [Character Anchors]`, consistencyResult.characterAnchors);
+            }
+          } else {
+            console.log(`⚠️ [Character Consistency] No consistent prompt returned for Scene ${scene.sceneNumber}, using original prompt`);
+          }
+        } catch (ccError) {
+          console.error(`❌ [Character Consistency] Failed to apply consistency for Scene ${scene.sceneNumber}:`, ccError);
+          throw new Error(`Character consistency failed for Scene ${scene.sceneNumber}: ${ccError instanceof Error ? ccError.message : 'Unknown error'}`);
+        }
+
+        console.log(`🎨 [Automated Workflow] Using cleaned image prompt: ${finalPrompt.substring(0, 80)}...`);
 
         // Generate image using the image generation tool directly
         const result = await imageGenerationTool.execute({
           context: {
-            prompt: imagePrompt,
+            prompt: finalPrompt,
             style: inputData.style,
             quality: 'standard',
             aspectRatio: '16:9',
@@ -260,7 +293,7 @@ const generateImagesStep = createStep({
         const sceneData = {
           sceneNumber: scene.sceneNumber,
           description: cleanStoryContentForPDF, // Use cleaned content for PDF
-          imagePrompt: imagePrompt, // Keep original for reference
+          imagePrompt: finalPrompt, // Keep the final (possibly consistency-adjusted) prompt
           storyContent: cleanStoryContentForPDF, // Use cleaned content
           imagePath,
           style: inputData.style,

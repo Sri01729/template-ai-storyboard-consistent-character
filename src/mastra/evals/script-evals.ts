@@ -9,19 +9,19 @@ interface MetricResult {
 // Helper function to extract JSON from markdown code blocks
 function extractJSON(output: string): string {
   console.log('🔍 [JSON Extraction] Original output starts with:', output.substring(0, 100));
-  
+
   // Remove markdown code block markers
   let cleaned = output;
-  
+
   // Remove ```json and ``` markers
   cleaned = cleaned.replace(/```json\s*/gi, '');
   cleaned = cleaned.replace(/```\s*$/gi, '');
-  
+
   // Remove any leading/trailing whitespace
   cleaned = cleaned.trim();
-  
+
   console.log('🔍 [JSON Extraction] Cleaned output starts with:', cleaned.substring(0, 100));
-  
+
   return cleaned;
 }
 
@@ -31,11 +31,11 @@ export class ScriptStructureMetric {
     console.log('🔍 [ScriptStructureMetric] Starting evaluation...');
     console.log('🔍 [ScriptStructureMetric] Input:', input.substring(0, 100) + '...');
     console.log('🔍 [ScriptStructureMetric] Output length:', output.length);
-    
+
     try {
       // Extract JSON from markdown if needed
       const jsonOutput = extractJSON(output);
-      
+
       // Parse the output to check if it's valid JSON with required structure
       console.log('🔍 [ScriptStructureMetric] Attempting to parse JSON...');
       const parsed = JSON.parse(jsonOutput);
@@ -49,7 +49,7 @@ export class ScriptStructureMetric {
         console.log('❌ [ScriptStructureMetric] Has logline:', !!parsed.logline);
         console.log('❌ [ScriptStructureMetric] Has characters:', !!parsed.characters);
         console.log('❌ [ScriptStructureMetric] Has scenes:', !!parsed.scenes);
-        
+
         return {
           score: 0,
           info: {
@@ -118,12 +118,12 @@ export class ScriptStructureMetric {
 export class DialogueQualityMetric {
   async measure(input: string, output: string): Promise<MetricResult> {
     console.log('🔍 [DialogueQualityMetric] Starting evaluation...');
-    
+
     try {
       const jsonOutput = extractJSON(output);
       const parsed = JSON.parse(jsonOutput);
       console.log('🔍 [DialogueQualityMetric] JSON parsed successfully');
-      
+
       if (!parsed.scenes || !Array.isArray(parsed.scenes)) {
         console.log('❌ [DialogueQualityMetric] No scenes found in output');
         return { score: 0, info: { reason: 'No scenes found in output' } };
@@ -131,7 +131,7 @@ export class DialogueQualityMetric {
 
       const scenes = parsed.scenes;
       console.log('🔍 [DialogueQualityMetric] Found', scenes.length, 'scenes');
-      
+
       let totalDialogueLength = 0;
       let scenesWithDialogue = 0;
       let dialogueQualityScores = [];
@@ -139,7 +139,7 @@ export class DialogueQualityMetric {
       for (let i = 0; i < scenes.length; i++) {
         const scene = scenes[i];
         console.log(`🔍 [DialogueQualityMetric] Analyzing scene ${i + 1}`);
-        
+
         if (scene.dialogue && typeof scene.dialogue === 'string') {
           const dialogueLength = scene.dialogue.trim().length;
           totalDialogueLength += dialogueLength;
@@ -166,7 +166,7 @@ export class DialogueQualityMetric {
 
           const finalScore = Math.min(qualityScore, 1);
           dialogueQualityScores.push(finalScore);
-          
+
           console.log(`🔍 [DialogueQualityMetric] Scene ${i + 1} quality score:`, finalScore, {
             hasQuotes, hasCharacterNames, hasEmotion, hasVariety, dialogue: scene.dialogue.substring(0, 50) + '...'
           });
@@ -224,12 +224,12 @@ export class DialogueQualityMetric {
 export class CharacterDevelopmentMetric {
   async measure(input: string, output: string): Promise<MetricResult> {
     console.log('🔍 [CharacterDevelopmentMetric] Starting evaluation...');
-    
+
     try {
       const jsonOutput = extractJSON(output);
       const parsed = JSON.parse(jsonOutput);
       console.log('🔍 [CharacterDevelopmentMetric] JSON parsed successfully');
-      
+
       if (!parsed.characters || !Array.isArray(parsed.characters)) {
         console.log('❌ [CharacterDevelopmentMetric] No characters found in output');
         return { score: 0, info: { reason: 'No characters found in output' } };
@@ -237,7 +237,7 @@ export class CharacterDevelopmentMetric {
 
       const characters = parsed.characters;
       console.log('🔍 [CharacterDevelopmentMetric] Found', characters.length, 'characters');
-      
+
       let totalCharacters = characters.length;
       let wellDevelopedCharacters = 0;
       let characterScores = [];
@@ -245,7 +245,7 @@ export class CharacterDevelopmentMetric {
       for (let i = 0; i < characters.length; i++) {
         const character = characters[i];
         console.log(`🔍 [CharacterDevelopmentMetric] Analyzing character ${i + 1}:`, character.name);
-        
+
         let characterScore = 0;
 
         // Check for required character fields
@@ -255,14 +255,14 @@ export class CharacterDevelopmentMetric {
         } else {
           console.log(`❌ [CharacterDevelopmentMetric] Character ${i + 1} has invalid name:`, character.name);
         }
-        
+
         if (character.description && typeof character.description === 'string' && character.description.trim().length > 10) {
           characterScore += 0.4;
           console.log(`✅ [CharacterDevelopmentMetric] Character ${i + 1} has good description (${character.description.length} chars)`);
         } else {
           console.log(`❌ [CharacterDevelopmentMetric] Character ${i + 1} has poor description:`, character.description);
         }
-        
+
         if (character.role && typeof character.role === 'string' && character.role.trim().length > 0) {
           characterScore += 0.3;
           console.log(`✅ [CharacterDevelopmentMetric] Character ${i + 1} has valid role: "${character.role}"`);
@@ -272,7 +272,7 @@ export class CharacterDevelopmentMetric {
 
         characterScores.push(characterScore);
         console.log(`🔍 [CharacterDevelopmentMetric] Character ${i + 1} total score:`, characterScore);
-        
+
         if (characterScore >= 0.7) {
           wellDevelopedCharacters++;
           console.log(`✅ [CharacterDevelopmentMetric] Character ${i + 1} is well-developed`);
@@ -327,12 +327,12 @@ export class CharacterDevelopmentMetric {
 export class PlotCoherenceMetric {
   async measure(input: string, output: string): Promise<MetricResult> {
     console.log('🔍 [PlotCoherenceMetric] Starting evaluation...');
-    
+
     try {
       const jsonOutput = extractJSON(output);
       const parsed = JSON.parse(jsonOutput);
       console.log('🔍 [PlotCoherenceMetric] JSON parsed successfully');
-      
+
       if (!parsed.scenes || !Array.isArray(parsed.scenes) || parsed.scenes.length < 2) {
         console.log('❌ [PlotCoherenceMetric] Not enough scenes to evaluate plot coherence');
         return { score: 1, info: { reason: 'Not enough scenes to evaluate plot coherence' } };
@@ -340,14 +340,14 @@ export class PlotCoherenceMetric {
 
       const scenes = parsed.scenes;
       console.log('🔍 [PlotCoherenceMetric] Found', scenes.length, 'scenes');
-      
+
       let coherenceScore = 0;
       let totalChecks = 0;
 
       // Check if scene numbers are sequential
       const sceneNumbers = scenes.map((scene: any) => scene.sceneNumber).filter(Boolean);
       console.log('🔍 [PlotCoherenceMetric] Scene numbers:', sceneNumbers);
-      
+
       const isSequential = sceneNumbers.every((num: number, index: number) => num === index + 1);
       if (isSequential) coherenceScore += 0.3;
       totalChecks++;
@@ -402,12 +402,12 @@ export class PlotCoherenceMetric {
 export class GenreAlignmentMetric {
   async measure(input: string, output: string): Promise<MetricResult> {
     console.log('🔍 [GenreAlignmentMetric] Starting evaluation...');
-    
+
     try {
       const jsonOutput = extractJSON(output);
       const parsed = JSON.parse(jsonOutput);
       console.log('🔍 [GenreAlignmentMetric] JSON parsed successfully');
-      
+
       if (!parsed.genre || typeof parsed.genre !== 'string') {
         console.log('❌ [GenreAlignmentMetric] No genre specified in output');
         return { score: 0, info: { reason: 'No genre specified in output' } };
@@ -415,10 +415,10 @@ export class GenreAlignmentMetric {
 
       const genre = parsed.genre.toLowerCase();
       console.log('🔍 [GenreAlignmentMetric] Genre:', genre);
-      
+
       const allContent = JSON.stringify(parsed).toLowerCase();
       console.log('🔍 [GenreAlignmentMetric] Content length:', allContent.length);
-      
+
       // Genre-specific keyword checks
       const genreKeywords = {
         'drama': ['conflict', 'emotion', 'character', 'relationship', 'tension', 'struggle', 'resilient', 'desperate', 'survival'],
@@ -440,7 +440,7 @@ export class GenreAlignmentMetric {
 
       let keywordMatches = 0;
       const matchedKeywords = [];
-      
+
       for (const keyword of keywords) {
         if (allContent.includes(keyword)) {
           keywordMatches++;

@@ -9,8 +9,7 @@
   },
   "scripts": {
     "dev": "mastra dev",
-    "build": "mastra build",
-    "start": "mastra start"
+    "build": "mastra build"
   },
   "keywords": [
     "mastra",
