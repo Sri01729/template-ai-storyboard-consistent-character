@@ -225,10 +225,11 @@ When in automatic mode, you must coordinate ALL agents in sequence:
 1. Call Script Generator Agent → Get screenplay
 2. **If screenplay is long (>1000 words), summarize it first to prevent truncation**
 3. Pass screenplay (or summary) to Storyboard Agent → Get storyboard
-4. Pass storyboard to Image Generator Agent → Get images (ONLY ONCE)
-5. Pass storyboard + images to Export Agent → Get PDF
-6. Pass PDF to PDF Upload Agent → Upload to S3 and Google Drive
-7. Return final PDF path, cloud URLs, and summary
+4. Pass storyboard to Image Generator Agent → Get images with ACTUAL filenames (ONLY ONCE)
+5. **CRITICAL**: Verify Image Generator Agent returned storyboard with REAL image paths
+6. Pass storyboard + images to Export Agent → Get PDF
+7. Pass PDF to PDF Upload Agent → Upload to S3 and Google Drive
+8. Return final PDF path, cloud URLs, and summary
 
 **CRITICAL RULES:**
 - Call each agent EXACTLY ONCE in the sequence
@@ -260,6 +261,13 @@ When in automatic mode, you must coordinate ALL agents in sequence:
 6. **Provide final PDF path, cloud URLs, and summary** → Complete the task
 
 **CRITICAL: In Mode 2, NEVER stop after one agent. Always continue to the next agent automatically.**
+
+## IMAGE PATH VALIDATION - CRITICAL
+- **BEFORE** passing to Export Agent, verify all scenes have REAL image paths
+- **REJECT** any storyboard with placeholder URLs like "https://example.com/image1.jpg"
+- **REQUIRE** actual filenames like "scene_1_A_lush__ancient_fore_1754661522659_2025-08-08T13-58-42-659Z.png"
+- **IF** image paths are missing or incorrect, call Image Generator Agent again
+- **NEVER** proceed to PDF export with placeholder image paths
 
 ## Image Generation Guidelines
 - **Available Image Styles**: Use exact style names: 'Cinematic', 'Anime', 'Comic Book', 'Watercolor', 'Oil Painting', 'Sketch', 'Pixel Art', 'Ghibli-esque', 'Disney-esque', 'Cyberpunk', 'Steampunk', 'Fantasy', 'Sci-Fi', 'Horror', 'Noir', 'Pop Art', 'Abstract', 'Impressionistic', 'Surreal', 'Photorealistic'.
@@ -309,6 +317,16 @@ export const storyboardNetworkLegacy = new AgentNetwork({
 - Use the actual generated filename with timestamp (e.g., "scene_1_1754657736229.png")
 - Update the storyboard data with the correct image paths
 - Do NOT use placeholder paths like "scene_1.png"
+
+## STRICT IMAGE PATH RULES - CRITICAL
+- **NEVER** use placeholder URLs like "https://example.com/image1.jpg"
+- **NEVER** use simple paths like "scene_1.png" or "image1.jpg"
+- **ALWAYS** use the actual generated filenames from the image generation tool
+- **MUST** update each scene's imagePath field with the real filename
+- **REQUIRED**: Return the complete storyboard JSON with all scenes updated
+- **FORBIDDEN**: Any placeholder or example URLs in the final output
+- **MANDATORY**: Use filenames like "scene_1_A_lush__ancient_fore_1754661522659_2025-08-08T13-58-42-659Z.png"
+- **CRITICAL**: The image generation tool returns actual filenames - use those exact filenames
 
 ## Available Agents
 1. **Script Generator Agent**: Creates complete screenplays from story ideas using Google Gemini
