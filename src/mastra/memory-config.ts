@@ -36,60 +36,9 @@ export const createAgentMemory = () => {
         scope: 'resource', // Search across all threads for the same user
       },
 
-      // Enhanced working memory configuration with semantic recall optimization
+      // Disable working memory temporarily to avoid missing tool error
       workingMemory: {
-        enabled: true,
-        scope: 'resource', // CRITICAL: This makes working memory persist across all threads for the same user
-        template: `# User Profile & Semantic Context
-
-## Personal Information
-- **Name**:
-- **Location**:
-- **Timezone**:
-- **Communication Style**: [Formal/Casual]
-- **Technical Level**: [Beginner/Intermediate/Expert]
-
-## Project Context & History
-- **Current Goal**:
-- **Project Type**:
-- **Preferred Style**:
-- **Target Audience**:
-- **Previous Projects**: [List of completed projects]
-- **Common Patterns**: [Recurring themes, styles, or requirements]
-
-## Session State & Workflow
-- **Last Task**:
-- **Current Progress**:
-- **Open Questions**:
-- **Next Steps**:
-- **Current Workflow Phase**: [Script/Storyboard/Images/Export/Upload]
-
-## Creative Preferences & Patterns
-- **Art Style**: [List of preferred styles]
-- **Story Genre**: [List of preferred genres]
-- **Character Focus**: [Yes/No/Depends]
-- **Visual Elements**: [List of preferred elements]
-- **Narrative Patterns**: [Common story structures or themes]
-
-## Technical Preferences & Requirements
-- **Export Format**: [PDF/JSON/HTML/Markdown]
-- **Image Quality**: [Standard/High/Ultra]
-- **Number of Scenes**: [Typical range]
-- **Special Requirements**: [Any specific needs]
-- **File Organization**: [Preferences for file naming, structure]
-
-## Semantic Search Keywords
-- **Common Topics**: [Frequently discussed subjects]
-- **Technical Terms**: [Domain-specific vocabulary]
-- **Project Keywords**: [Important terms for this user's projects]
-- **Style Keywords**: [Visual and narrative style terms]
-
-## Long-term Memory & Patterns
-- **Completed Projects**: [History of finished work]
-- **Learning Preferences**: [How user likes to receive information]
-- **Feedback History**: [Past feedback and improvements]
-- **Collaboration Style**: [How user works with AI agents]
-- **Error Patterns**: [Common issues and solutions]`,
+        enabled: false,
       },
 
       // Thread configuration
@@ -134,41 +83,9 @@ export const createMasterMemory = () => {
         scope: 'resource', // Search across all threads for the same user
       },
 
-      // Working memory configuration - simplified to match docs
+      // Disable working memory temporarily to avoid missing tool error
       workingMemory: {
-        enabled: true,
-        scope: 'resource', // CRITICAL: This makes working memory persist across all threads for the same user
-        template: `# Master Agent Memory
-
-## Current Project
-- **Project Type**: Storyboard Generation
-- **User Request**:
-- **Current Phase**: [Script/Storyboard/Images/Export]
-- **Progress**: [0-100%]
-
-## Agent Coordination
-- **Active Agents**:
-- **Completed Tasks**:
-- **Pending Tasks**:
-- **Error Handling**:
-
-## User Context
-- **Preferred Styles**:
-- **Story Preferences**:
-- **Technical Requirements**:
-- **Export Format**:
-
-## Workflow State
-- **Script Generated**: [Yes/No]
-- **Storyboard Created**: [Yes/No]
-- **Images Generated**: [Yes/No]
-- **Export Ready**: [Yes/No]
-
-## Quality Control
-- **Style Consistency**:
-- **Character Continuity**:
-- **Narrative Flow**:
-- **Technical Issues**: `,
+        enabled: false,
       },
 
       // Thread configuration
@@ -213,52 +130,9 @@ export const createResourceScopedMemory = () => {
         scope: 'resource', // Search across all threads for the same user
       },
 
-      // Working memory configuration - comprehensive user profile
+      // Disable working memory temporarily to avoid missing tool error
       workingMemory: {
-        enabled: true,
-        scope: 'resource', // CRITICAL: This makes working memory persist across all threads for the same user
-        template: `# User Profile & Project History
-
-## Personal Information
-- **Name**:
-- **Location**:
-- **Timezone**:
-- **Communication Style**: [Formal/Casual]
-- **Technical Level**: [Beginner/Intermediate/Expert]
-
-## Project Portfolio
-- **Completed Projects**:
-- **Current Projects**:
-- **Preferred Genres**:
-- **Style Preferences**:
-- **Common Requirements**:
-
-## Workflow Patterns
-- **Typical Project Size**:
-- **Preferred Export Formats**:
-- **Image Quality Preferences**:
-- **Revision Patterns**:
-- **Collaboration Style**:
-
-## Technical Preferences
-- **Art Styles**: [List of preferred styles]
-- **Story Genres**: [List of preferred genres]
-- **Character Focus**: [Yes/No/Depends]
-- **Visual Elements**: [List of preferred elements]
-- **Export Formats**: [PDF/JSON/HTML/Markdown]
-
-## Quality Standards
-- **Style Consistency**: [High/Medium/Low]
-- **Character Continuity**: [High/Medium/Low]
-- **Narrative Flow**: [High/Medium/Low]
-- **Technical Quality**: [High/Medium/Low]
-
-## Session Management
-- **Current Session**:
-- **Last Activity**:
-- **Open Questions**:
-- **Next Steps**:
-- **Pending Feedback**: `,
+        enabled: false,
       },
 
       // Thread configuration

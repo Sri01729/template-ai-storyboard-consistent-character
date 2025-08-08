@@ -55,40 +55,9 @@ const networkMemory = new Memory({
       },
       scope: 'resource',
     },
-    // Enable working memory for persistent user context
+    // Disable working memory temporarily to avoid missing tool error
     workingMemory: {
-      enabled: true,
-      template: `# Master Agent Memory
-
-## Current Project
-- **Project Type**: Storyboard Generation
-- **User Request**:
-- **Current Phase**: [Script/Storyboard/Images/Export]
-- **Progress**: [0-100%]
-
-## Agent Coordination
-- **Active Agents**:
-- **Completed Tasks**:
-- **Pending Tasks**:
-- **Error Handling**:
-
-## User Context
-- **Preferred Styles**:
-- **Story Preferences**:
-- **Technical Requirements**:
-- **Export Format**:
-
-## Workflow State
-- **Script Generated**: [Yes/No]
-- **Storyboard Created**: [Yes/No]
-- **Images Generated**: [Yes/No]
-- **Export Ready**: [Yes/No]
-
-## Quality Control
-- **Style Consistency**:
-- **Character Continuity**:
-- **Narrative Flow**:
-- **Technical Issues**: `,
+      enabled: false,
     },
     // Thread configuration
     threads: {
