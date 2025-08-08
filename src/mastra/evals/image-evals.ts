@@ -272,7 +272,7 @@ export class TechnicalSpecsMetric {
       if (firstImage.metadata) {
         const metadata = firstImage.metadata;
         console.log('🔍 [TechnicalSpecsMetric] Metadata found:', metadata);
-        
+
         if (metadata.quality) score += 0.1;
         if (metadata.aspectRatio) score += 0.1;
         if (metadata.model) score += 0.1;

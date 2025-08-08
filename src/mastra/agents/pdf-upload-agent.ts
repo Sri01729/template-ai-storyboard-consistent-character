@@ -2,7 +2,6 @@ import { Agent } from "@mastra/core/agent";
 import { google } from "@ai-sdk/google";
 import { createAgentMemory } from "../memory-config.js";
 import { pdfUploadTool } from "../tools/pdf-upload-tool";
-import { pdfSpecificEvals } from "../evals/pdf-evals";
 
 export const pdfUploadAgent = new Agent({
   name: "PDF Upload Agent",
@@ -30,13 +29,5 @@ Use the pdfUploadTool to execute the complete workflow.`,
   memory: createAgentMemory(),
   tools: {
     pdfUpload: pdfUploadTool,
-  },
-  evals: {
-    // PDF-specific evaluations
-    uploadValidation: pdfSpecificEvals.uploadValidation,
-    contentExtraction: pdfSpecificEvals.contentExtraction,
-    structureAnalysis: pdfSpecificEvals.structureAnalysis,
-    processingQuality: pdfSpecificEvals.processingQuality,
-    dataConversion: pdfSpecificEvals.dataConversion,
   },
 });

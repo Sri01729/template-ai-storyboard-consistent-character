@@ -1,10 +1,8 @@
 import { storyboardSpecificEvals } from './storyboard-evals';
 import { scriptSpecificEvals } from './script-evals';
 import { imageSpecificEvals } from './image-evals';
-import { exportSpecificEvals } from './export-evals';
-import { pdfSpecificEvals } from './pdf-evals';
 
-// Export all evaluation metrics
+// Export all evaluation metrics (only for creative content agents)
 export const evals = {
   // Storyboard-specific evaluations
   ...storyboardSpecificEvals,
@@ -12,10 +10,6 @@ export const evals = {
   ...scriptSpecificEvals,
   // Image-specific evaluations
   ...imageSpecificEvals,
-  // Export-specific evaluations
-  ...exportSpecificEvals,
-  // PDF-specific evaluations
-  ...pdfSpecificEvals,
 };
 
 // Export individual evals for convenience
@@ -37,17 +31,6 @@ export const {
   technicalSpecs,
   creativeElements,
   characterFocus,
-  // Export evals
-  format,
-  completeness,
-  quality,
-  readiness,
-  // PDF evals
-  uploadValidation,
-  contentExtraction,
-  structureAnalysis,
-  processingQuality,
-  dataConversion,
 } = evals;
 
 // Export the main evals object as default

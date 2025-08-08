@@ -41,12 +41,12 @@ A comprehensive AI-powered storyboard generation system built with Mastra, featu
 ### 4. Export Specialist Agent
 - **Purpose**: Handles multiple export formats and data organization
 - **Capabilities**: PDF, JSON, and custom format exports
-- **Evaluation**: Export format compliance, data completeness, quality
+- **Note**: Utility agent - performs straightforward file operations
 
 ### 5. PDF Upload Agent
 - **Purpose**: Processes and extracts data from uploaded PDFs with cloud integration
 - **Capabilities**: PDF parsing, content extraction, data conversion, Google Drive upload, Slack notifications
-- **Evaluation**: Upload validation, content extraction, processing quality
+- **Note**: Utility agent - performs straightforward file operations
 - **Integrations**:
   - **Google Drive**: Direct file uploads to specified folders
   - **Slack**: Real-time notifications via Zapier webhook for upload status and processing results
@@ -56,7 +56,7 @@ A comprehensive AI-powered storyboard generation system built with Mastra, featu
 The project includes a comprehensive evaluation system built on Mastra Evals to ensure high-quality outputs:
 
 ### Evaluation Metrics
-- **25+ Custom Metrics**: Specialized evaluation criteria for each agent
+- **15 Custom Metrics**: Specialized evaluation criteria for creative content agents
 - **Heuristic-Based**: Efficient rule-based evaluation without additional LLM calls
 - **Detailed Logging**: Comprehensive debugging and transparency
 - **JSON Extraction**: Handles markdown-wrapped JSON outputs automatically
@@ -71,8 +71,8 @@ The project includes a comprehensive evaluation system built on Mastra Evals to 
 - **Storyboard Agent**: 5 metrics (structure, visual quality, content, characters, narrative)
 - **Script Agent**: 5 metrics (structure, dialogue, characters, plot, genre)
 - **Image Agent**: 5 metrics (prompt quality, consistency, specs, creativity, focus)
-- **Export Agent**: 5 metrics (format, completeness, structure, quality, readiness)
-- **PDF Agent**: 5 metrics (upload, extraction, structure, processing, conversion)
+- **Export Agent**: No evaluations (utility operations)
+- **PDF Agent**: No evaluations (utility operations)
 
 ## 🛠️ Installation
 
