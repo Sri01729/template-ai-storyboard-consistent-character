@@ -1,6 +1,6 @@
 # AI Story Board Generator Template
 
-A comprehensive AI-powered storyboard generation system built with Mastra, featuring multiple specialized agents for creating, enhancing, and exporting storyboards with advanced evaluation metrics. This template demonstrates advanced Mastra functionality including agent networks, automated workflows, memory management, and comprehensive evaluation systems.
+A comprehensive AI-powered storyboard generation system built with Mastra, featuring multiple specialized agents for creating, enhancing, and exporting storyboards with **consistent character generation** and advanced evaluation metrics. This template demonstrates advanced Mastra functionality including agent networks, automated workflows, memory management, and comprehensive evaluation systems.
 
 ## 🎯 Template Features
 
@@ -55,8 +55,9 @@ A comprehensive AI-powered storyboard generation system built with Mastra, featu
 
 ### 4. Export Specialist Agent
 - **Purpose**: Handles export and data organization
-- **Capabilities**: PDF export
+- **Capabilities**: PDF export, data formatting, file generation
 
+### 5. PDF Upload Agent
 - **Purpose**: Processes and extracts data from uploaded PDFs with cloud integration
 - **Capabilities**: PDF parsing, content extraction, data conversion, Google Drive upload, Slack notifications
 - **Integrations**:
@@ -83,6 +84,24 @@ The project includes a comprehensive evaluation system built on Mastra Evals to 
 - **Script Agent**: 5 metrics (structure, dialogue quality, character development, plot coherence, genre alignment)
 
 ## 🛠️ Installation & Setup
+
+### Dependencies
+- **@mastra/core**: Core Mastra framework for AI agent development
+- **@mastra/evals**: Evaluation system for quality metrics
+- **@mastra/libsql**: LibSQL storage for agent memory
+- **@mastra/loggers**: Logging system for debugging and monitoring
+- **@mastra/memory**: Memory management for agent state
+- **@ai-sdk/google**: Google AI integration for Gemini models
+- **@ai-sdk/openai**: OpenAI integration for content analysis and generation
+- **@aws-sdk/client-s3**: AWS S3 cloud storage for PDF uploads
+- **@aws-sdk/s3-request-presigner**: S3 presigned URL generation
+- **@google/genai**: Google Generative AI for image generation
+- **@google/generative-ai**: Google AI SDK for advanced features
+- **@modelcontextprotocol/server-filesystem**: MCP filesystem server integration
+- **canvas**: Canvas API for image processing
+- **jspdf**: PDF generation library
+- **pdfkit**: PDF creation and manipulation
+- **zod**: Schema validation and type safety
 
 ### Prerequisites
 - Node.js 18 or higher
@@ -133,6 +152,7 @@ GOOGLE_API_KEY=your_google_key          # used by Google/Gemini models
 AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_REGION=us-east-1
+S3_BUCKET=your_s3_bucket_name
 
 # Zapier Webhook for Google Drive/Slack integrations (optional)
 ZAPIER_WEBHOOK_URL=your_zapier_webhook_url
@@ -156,75 +176,19 @@ You can access various subagents in the playground and experiment with them indi
 
 #### V-Next Stream Agent Network
 
-For coordinated multi-agent workflows, use the v-next stream agent network:
+For coordinated multi-agent workflows, use the v-next stream agent network in the playground chat interface:
 
-```typescript
-import { generateCompleteStoryboard } from './src/mastra/agentnetwork/agent-network';
-
-// Example prompt for agent network
-const prompt = `create a storyboard for the story of "a curious boy who lives in a floating village of lanterns and sets out at dawn with his mechanical bird to find the lost light of the village" in steampunk style with warm sunrise tones, steampunk-inspired details, and emotional wonder. compile the final visuals into a PDF and upload it to my drive`;
-
-const stream = await generateCompleteStoryboard(prompt, {
-  style: 'Steampunk',
-  numberOfImages: 5,
-  exportFormat: 'pdf'
-});
-
-// The network will automatically:
-// 1. Generate a script from the story idea
-// 2. Convert script to storyboard with scenes
-// 3. Generate images for each scene
-// 4. Create PDF with embedded images
-// 5. Upload to S3 and Google Drive
+**Prompt Structure:**
+```
+create a storyboard for the story of "a curious boy who lives in a floating village of lanterns and sets out at dawn with his mechanical bird to find the lost light of the village" in steampunk style with warm sunrise tones, steampunk-inspired details, and emotional wonder. compile the final visuals into a PDF and upload it to my drive
 ```
 
-### Zero-Shot Storyboard Generation
-
-For direct storyboard creation without using the agent network, provide a complete prompt that includes:
-
-1. **Story Context or Script**: Your own story or script content
-2. **Image Style**: Specify from available styles
-3. **Final Output Request**: Ask for PDF and drive upload
-
-#### Available Image Styles
-
-Choose from these styles for your storyboards:
-
-- **Cinematic**: Professional film still with photorealistic quality
-- **Photographic**: High-quality photograph with natural lighting
-- **Anime**: Vibrant anime style with cel-shaded characters
-- **Manga**: Black and white manga panel with screentones
-- **Ghibli-esque**: Whimsical hand-drawn animation style
-- **Disney-esque**: Classic Disney animation with expressive characters
-- **Comic Book**: American comic book art with bold outlines
-- **Graphic Novel**: Mature graphic novel style with atmospheric lighting
-- **Watercolor**: Beautiful watercolor painting with soft edges
-- **Low Poly**: 3D low poly render with geometric shapes
-- **Pixel Art**: 16-bit pixel art with nostalgic retro aesthetic
-- **Steampunk**: Victorian steampunk style with brass details
-- **Cyberpunk**: Neon-drenched cyberpunk cityscape
-- **Fantasy Art**: Epic fantasy art with dramatic lighting
-- **Film Noir**: Black and white film noir with high contrast
-
-#### Zero-Shot Example
-
-```typescript
-import { storyboardAgent } from './src/mastra/agents/storyboard-agent';
-
-const zeroShotPrompt = `Create a storyboard for this script:
-
-SCENE 1: A young detective enters a dimly lit library at midnight. The shelves are lined with ancient books, and dust motes dance in the air.
-
-SCENE 2: She discovers a mysterious book that glows with an otherworldly light.
-
-SCENE 3: As she opens the book, magical symbols float into the air.
-
-Use Ghibli-esque style with warm, magical lighting. Create a final PDF and upload it to my Google Drive.`;
-
-const response = await storyboardAgent.generate([
-  { role: 'user', content: zeroShotPrompt }
-]);
-```
+The network will automatically:
+1. Generate a script from the story idea
+2. Convert script to storyboard with scenes
+3. Generate images for each scene
+4. Create PDF with embedded images
+5. Upload to S3 and Google Drive
 
 ### Basic Storyboard Generation
 
@@ -280,7 +244,7 @@ console.log(`Structure Score: ${result.score}`);
 npx tsx examples/evals.ts
 ```
 
-## 📁 Project Structure (Current)
+## 📁 Project Structure
 
 ```
 src/
@@ -291,14 +255,35 @@ src/
 │   │   ├── image-generator-agent.ts
 │   │   ├── export-agent.ts
 │   │   └── pdf-upload-agent.ts
+│   ├── agentnetwork/     # Agent coordination system
+│   │   └── agent-network.ts
 │   ├── evals/           # Evaluation metrics
 │   │   ├── storyboard-evals.ts
 │   │   ├── script-evals.ts
 │   │   └── index.ts
 │   ├── tools/           # Custom tools
+│   │   ├── character-consistency-tool.ts
+│   │   ├── image-generation-tool.ts
+│   │   ├── pdf-export-tool.ts
+│   │   ├── pdf-upload-tool.ts
+│   │   ├── script-analysis-tool.ts
+│   │   └── style-manager-tool.ts
 │   ├── workflows/       # Workflow definitions
-│   └── index.ts         # Main exports
+│   │   └── agent-network-automated-workflow.ts
+│   ├── schemas/         # Zod schemas for type safety
+│   │   ├── export-schema.ts
+│   │   ├── pdf-upload-schema.ts
+│   │   ├── script-schema.ts
+│   │   └── storyboard-schema.ts
+│   ├── index.ts         # Main exports
+│   ├── mcp-config.ts    # MCP integration
+│   └── memory-config.ts # Memory management setup
 └── examples/           # Usage examples
+    ├── basic-usage.ts
+    ├── evals.ts
+    ├── pdf-upload.ts
+    ├── streaming.ts
+    └── workflow-automated.ts
 ```
 
 ## 🔧 Development
@@ -318,8 +303,6 @@ All evaluation metrics return scores between 0.0 and 1.0:
 ```bash
 npm run dev      # Start development server
 npm run build    # Build the project
-npm run start    # Start production server
-npm run lint     # Run linting
 ```
 
 ### Performance Optimization
@@ -615,6 +598,7 @@ Additional env required:
 export AWS_ACCESS_KEY_ID="..."
 export AWS_SECRET_ACCESS_KEY="..."
 export AWS_REGION="us-east-1"         # or your region
+export S3_BUCKET="your-bucket-name"   # your S3 bucket name
 # Optional (Zapier webhook → Google Drive, Slack, etc.)
 export ZAPIER_WEBHOOK_URL="https://hooks.zapier.com/..."
 ```
@@ -707,7 +691,7 @@ Your app or agent can now generate PDFs → upload via S3 URL → send to Zapier
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This template is part of the Mastra framework and follows the same licensing terms.
 
 ## 🆘 Support
 
