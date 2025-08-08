@@ -142,6 +142,90 @@ ZAPIER_WEBHOOK_URL=your_zapier_webhook_url
 
 ## 🚀 Usage
 
+### Accessing Subagents in Playground
+
+You can access various subagents in the playground and experiment with them individually:
+
+- **Storyboard Agent**: Creates visual storyboards from scripts
+- **Script Generator Agent**: Converts story ideas into detailed screenplays
+- **Image Generator Agent**: Generates images for storyboard scenes
+- **Export Agent**: Creates PDFs and other export formats
+- **PDF Upload Agent**: Handles cloud uploads to S3 and Google Drive
+
+### Agent Network Usage
+
+#### V-Next Stream Agent Network
+
+For coordinated multi-agent workflows, use the v-next stream agent network:
+
+```typescript
+import { generateCompleteStoryboard } from './src/mastra/agentnetwork/agent-network';
+
+// Example prompt for agent network
+const prompt = `create a storyboard for the story of "a curious boy who lives in a floating village of lanterns and sets out at dawn with his mechanical bird to find the lost light of the village" in steampunk style with warm sunrise tones, steampunk-inspired details, and emotional wonder. compile the final visuals into a PDF and upload it to my drive`;
+
+const stream = await generateCompleteStoryboard(prompt, {
+  style: 'Steampunk',
+  numberOfImages: 5,
+  exportFormat: 'pdf'
+});
+
+// The network will automatically:
+// 1. Generate a script from the story idea
+// 2. Convert script to storyboard with scenes
+// 3. Generate images for each scene
+// 4. Create PDF with embedded images
+// 5. Upload to S3 and Google Drive
+```
+
+### Zero-Shot Storyboard Generation
+
+For direct storyboard creation without using the agent network, provide a complete prompt that includes:
+
+1. **Story Context or Script**: Your own story or script content
+2. **Image Style**: Specify from available styles
+3. **Final Output Request**: Ask for PDF and drive upload
+
+#### Available Image Styles
+
+Choose from these styles for your storyboards:
+
+- **Cinematic**: Professional film still with photorealistic quality
+- **Photographic**: High-quality photograph with natural lighting
+- **Anime**: Vibrant anime style with cel-shaded characters
+- **Manga**: Black and white manga panel with screentones
+- **Ghibli-esque**: Whimsical hand-drawn animation style
+- **Disney-esque**: Classic Disney animation with expressive characters
+- **Comic Book**: American comic book art with bold outlines
+- **Graphic Novel**: Mature graphic novel style with atmospheric lighting
+- **Watercolor**: Beautiful watercolor painting with soft edges
+- **Low Poly**: 3D low poly render with geometric shapes
+- **Pixel Art**: 16-bit pixel art with nostalgic retro aesthetic
+- **Steampunk**: Victorian steampunk style with brass details
+- **Cyberpunk**: Neon-drenched cyberpunk cityscape
+- **Fantasy Art**: Epic fantasy art with dramatic lighting
+- **Film Noir**: Black and white film noir with high contrast
+
+#### Zero-Shot Example
+
+```typescript
+import { storyboardAgent } from './src/mastra/agents/storyboard-agent';
+
+const zeroShotPrompt = `Create a storyboard for this script:
+
+SCENE 1: A young detective enters a dimly lit library at midnight. The shelves are lined with ancient books, and dust motes dance in the air.
+
+SCENE 2: She discovers a mysterious book that glows with an otherworldly light.
+
+SCENE 3: As she opens the book, magical symbols float into the air.
+
+Use Ghibli-esque style with warm, magical lighting. Create a final PDF and upload it to my Google Drive.`;
+
+const response = await storyboardAgent.generate([
+  { role: 'user', content: zeroShotPrompt }
+]);
+```
+
 ### Basic Storyboard Generation
 
 ```typescript
