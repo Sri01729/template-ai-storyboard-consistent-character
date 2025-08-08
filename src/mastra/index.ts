@@ -76,9 +76,8 @@ export { runAutomatedAgentNetwork } from './workflows/agent-network-automated-wo
 // Export PDF upload workflow functions
 export { generateAndUploadStoryboard } from './workflows/pdf-upload-workflow';
 
-// Export evals (only for creative content agents)
+// Export evals
 export * from './evals';
 export * from './evals/storyboard-evals';
 export * from './evals/script-evals';
-export * from './evals/image-evals';
 export * from './evals/test-evals';

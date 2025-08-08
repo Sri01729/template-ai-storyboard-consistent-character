@@ -4,8 +4,6 @@
 
 The AI Story Board Generator project includes a comprehensive evaluation system built on Mastra Evals to measure the quality and effectiveness of AI agent outputs. The system uses heuristic-based metrics to evaluate different aspects of generated content without requiring additional LLM calls.
 
-**Note**: Evaluations are only applied to creative content generation agents (Storyboard, Script, Image). Utility agents (Export, PDF Upload) perform straightforward file operations and do not require quality evaluations.
-
 ## Available Evaluation Metrics
 
 ### Storyboard-Specific Metrics (`src/mastra/evals/storyboard-evals.ts`)
@@ -31,6 +29,22 @@ The AI Story Board Generator project includes a comprehensive evaluation system 
 - **TechnicalSpecsMetric**: Validates technical specifications
 - **CreativeElementsMetric**: Measures creative and artistic elements
 - **CharacterFocusMetric**: Evaluates character portrayal accuracy
+
+### Export Metrics (`src/mastra/evals/export-evals.ts`)
+
+- **ExportFormatMetric**: Validates export format compliance
+- **ExportCompletenessMetric**: Checks data completeness
+- **ExportStructureMetric**: Evaluates structural organization
+- **ExportQualityMetric**: Assesses overall export quality
+- **ExportReadinessMetric**: Measures production readiness
+
+### PDF Upload Metrics (`src/mastra/evals/pdf-evals.ts`)
+
+- **PDFUploadValidationMetric**: Validates PDF upload process
+- **PDFContentExtractionMetric**: Evaluates content extraction quality
+- **PDFStructureAnalysisMetric**: Assesses structure analysis accuracy
+- **PDFProcessingQualityMetric**: Measures processing efficiency
+- **PDFDataConversionMetric**: Evaluates data conversion accuracy
 
 ## Technical Implementation
 
@@ -70,7 +84,7 @@ Metrics use rule-based logic instead of LLM-as-judge for efficiency:
 
 ### Agent Configuration
 
-Creative content agents include evaluation metrics in their configuration:
+Each agent includes evaluation metrics in its configuration:
 
 ```typescript
 import { storyboardSpecificEvals } from '../evals/storyboard-evals';
@@ -87,27 +101,22 @@ export const storyboardAgent = createAgent({
 1. **Storyboard Creator Agent** (`storyboard-agent.ts`)
    - Uses: `storyboardSpecificEvals`
    - Evaluates: Storyboard structure, visual prompts, content completeness
-   - **5 Metrics**: Structure, Visual Quality, Content Completeness, Character Consistency, Narrative Flow
 
 2. **Script Generator Agent** (`script-generator-agent.ts`)
    - Uses: `scriptSpecificEvals`
    - Evaluates: Script structure, dialogue quality, character development
-   - **5 Metrics**: Structure, Dialogue Quality, Character Development, Plot Coherence, Genre Alignment
 
 3. **Image Generator Agent** (`image-generator-agent.ts`)
    - Uses: `imageSpecificEvals`
    - Evaluates: Image prompts, visual consistency, technical specs
-   - **5 Metrics**: Prompt Quality, Visual Consistency, Technical Specs, Creative Elements, Character Focus
-
-### Utility Agents (No Evaluations)
 
 4. **Export Specialist Agent** (`export-agent.ts`)
-   - **Purpose**: File format conversion and PDF generation
-   - **No Evaluations**: Performs straightforward utility operations
+   - Uses: `exportSpecificEvals`
+   - Evaluates: Export formats, completeness, quality
 
 5. **PDF Upload Agent** (`pdf-upload-agent.ts`)
-   - **Purpose**: Cloud storage upload and file management
-   - **No Evaluations**: Performs straightforward utility operations
+   - Uses: `pdfSpecificEvals`
+   - Evaluates: PDF processing, content extraction, data conversion
 
 ## Usage
 

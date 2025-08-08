@@ -30,4 +30,5 @@ Use the pdfUploadTool to execute the complete workflow.`,
   tools: {
     pdfUpload: pdfUploadTool,
   },
+
 });
