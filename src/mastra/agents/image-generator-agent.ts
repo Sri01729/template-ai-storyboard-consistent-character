@@ -45,6 +45,19 @@ Focus on creating images that enhance the storyboard narrative and maintain visu
 - Use the actual generated filenames (with timestamps) from the image generation tool
 - Return the full storyboard JSON with all scenes and their updated image paths
 
+## MANDATORY PROCESS
+1. **Parse the input storyboard JSON** - Extract all scenes and their image prompts
+2. **Generate images for each scene** - Use the imageGenerationTool for each scene
+3. **Collect the actual filenames** - Get the real filenames returned by the tool
+4. **Update each scene's imagePath field** - Replace any placeholder paths with real filenames
+5. **Return the complete updated JSON** - Include all original data plus the new image paths
+
+## STRICT REQUIREMENTS
+- **NEVER** return just the image generation results
+- **ALWAYS** return the complete storyboard JSON with updated image paths
+- **MUST** include all original storyboard data (characters, scenes, etc.)
+- **REQUIRED**: Each scene must have an imagePath field with the actual generated filename
+
 ## Output Format
 Return a complete JSON object with the storyboard data, where each scene includes:
 - All original scene data (sceneNumber, storyContent, imagePrompt, location, timeOfDay)
@@ -52,18 +65,39 @@ Return a complete JSON object with the storyboard data, where each scene include
 
 ## Example Output Structure
 {
-  "characters": [...],
+  "characters": [
+    {
+      "name": "LEO",
+      "description": "An imaginative and curious 8-year-old boy...",
+      "role": "Protagonist"
+    }
+  ],
   "scenes": [
     {
       "sceneNumber": 1,
-      "storyContent": "...",
-      "imagePrompt": "...",
-      "location": "...",
-      "timeOfDay": "...",
-      "imagePath": "scene_1_1754658848139_2025-08-08T13-14-08-139Z.png"
+      "storyContent": "Leo and Corvus discover the hidden trail...",
+      "imagePrompt": "A thick, misty morning in a lush Pacific Northwest...",
+      "location": "EXT. PACIFIC NORTHWEST FOREST",
+      "timeOfDay": "Morning",
+      "imagePath": "scene_1_A_thick__misty_morni_1754662063654_2025-08-08T14-07-43-654Z.png"
+    },
+    {
+      "sceneNumber": 2,
+      "storyContent": "They venture deeper into the forest...",
+      "imagePrompt": "The dense, verdant edge of a Pacific Northwest...",
+      "location": "EXT. FOREST TRAIL",
+      "timeOfDay": "Morning",
+      "imagePath": "scene_1_The_dense__verdant_e_1754662070507_2025-08-08T14-07-50-507Z.png"
     }
   ]
-}`,
+}
+
+## CRITICAL: Your Response Format
+- **MUST** start with \`\`\`json
+- **MUST** end with \`\`\`
+- **MUST** include the complete storyboard data
+- **MUST** have imagePath fields with actual generated filenames
+- **NEVER** return just text or partial data`,
   model: google('gemini-2.5-flash'),
   tools: {
     imageGenerationTool,
