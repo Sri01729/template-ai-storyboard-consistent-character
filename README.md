@@ -190,6 +190,26 @@ The network will automatically:
 4. Create PDF with embedded images
 5. Upload to S3 and Google Drive
 
+### Available Image Styles
+
+Choose from these styles for your storyboards:
+
+- **Cinematic**: Professional film still with photorealistic quality
+- **Photographic**: High-quality photograph with natural lighting
+- **Anime**: Vibrant anime style with cel-shaded characters
+- **Manga**: Black and white manga panel with screentones
+- **Ghibli-esque**: Whimsical hand-drawn animation style
+- **Disney-esque**: Classic Disney animation with expressive characters
+- **Comic Book**: American comic book art with bold outlines
+- **Graphic Novel**: Mature graphic novel style with atmospheric lighting
+- **Watercolor**: Beautiful watercolor painting with soft edges
+- **Low Poly**: 3D low poly render with geometric shapes
+- **Pixel Art**: 16-bit pixel art with nostalgic retro aesthetic
+- **Steampunk**: Victorian steampunk style with brass details
+- **Cyberpunk**: Neon-drenched cyberpunk cityscape
+- **Fantasy Art**: Epic fantasy art with dramatic lighting
+- **Film Noir**: Black and white film noir with high contrast
+
 ### Basic Storyboard Generation
 
 ```typescript
