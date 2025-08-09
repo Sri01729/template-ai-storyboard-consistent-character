@@ -1,5 +1,9 @@
 import { storyboardSpecificEvals } from './storyboard-evals';
 import { scriptSpecificEvals } from './script-evals';
+import { imageSpecificEvals } from './image-evals';
+
+// Export evaluation functions
+export { evaluateCharacterConsistency, evaluateStoryboardCharacterConsistency } from './character-consistency-eval';
 
 // Export all evaluation metrics
 export const evals = {
@@ -7,6 +11,8 @@ export const evals = {
   ...storyboardSpecificEvals,
   // Script-specific evaluations
   ...scriptSpecificEvals,
+  // Image-specific evaluations
+  ...imageSpecificEvals,
 };
 
 // Export individual evals for convenience
@@ -17,6 +23,8 @@ export const {
   storyContentCompleteness,
   characterConsistency,
   narrativeFlow,
+  // Image evals
+  imageCharacterConsistencyLLM,
   // Script evals
   dialogueQuality,
   characterDevelopment,

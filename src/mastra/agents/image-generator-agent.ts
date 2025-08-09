@@ -2,6 +2,7 @@ import { Agent } from '@mastra/core/agent';
 import { google } from '@ai-sdk/google';
 import { imageGenerationTool } from '../tools/image-generation-tool';
 import { createAgentMemory } from '../memory-config';
+import { characterVisualConsistencyLLMScorer } from '../scorers/character-visual-consistency-scorer';
 
 export const imageGeneratorAgent = new Agent({
   name: 'image-generator',
@@ -103,4 +104,7 @@ Return a complete JSON object with the storyboard data, where each scene include
     imageGenerationTool,
   },
   memory: createAgentMemory(),
+  evals: {
+    imageCharacterConsistencyLLM: characterVisualConsistencyLLMScorer,
+  },
 });

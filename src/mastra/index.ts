@@ -30,6 +30,9 @@ export const mastra = new Mastra({
   vnext_networks: {
     storyboardNetwork,
   },
+  workflows: {
+    automatedAgentNetworkWorkflow,
+  },
   storage: sharedStorage, // Enable shared storage for memory
   logger: new PinoLogger({
     name: 'Mastra',

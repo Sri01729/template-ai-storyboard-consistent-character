@@ -10,7 +10,7 @@ A comprehensive AI-powered storyboard generation system built with Mastra, featu
 - **Automated Workflows**: End-to-end storyboard generation pipelines
 - **Memory Management**: Persistent agent memory with LibSQL storage
 - **MCP Integration**: Model Context Protocol for external tool integration
- - **Comprehensive Evaluation**: 10 custom metrics implemented (5 storyboard + 5 script)
+ - **Comprehensive Evaluation**: 11 custom metrics implemented (5 storyboard + 5 script + 1 vision-based image consistency)
 
 ### Advanced Integrations
 - **Google Drive Upload**: Direct file uploads via Zapier webhooks
@@ -50,8 +50,9 @@ A comprehensive AI-powered storyboard generation system built with Mastra, featu
 - **Evaluation**: Script structure, dialogue quality, character development
 
 ### 3. Image Generator Agent
-- **Purpose**: Creates visual prompts for storyboard scenes
-- **Capabilities**: Scene visualization, style consistency, technical specifications
+- **Purpose**: Creates visual prompts and generates images for storyboard scenes
+- **Capabilities**: Scene visualization, style consistency, technical specifications, Google Imagen integration
+- **Evaluation**: Character and environment visual consistency analysis using GPT-4o-mini vision capabilities
 
 ### 4. Export Specialist Agent
 - **Purpose**: Handles export and data organization
@@ -69,8 +70,9 @@ A comprehensive AI-powered storyboard generation system built with Mastra, featu
 The project includes a comprehensive evaluation system built on Mastra Evals to ensure high-quality outputs:
 
 ### Evaluation Metrics
-- **10 Custom Metrics Implemented**: Specialized evaluation criteria for storyboard and script agents
-- **Heuristic-Based**: Efficient rule-based evaluation without additional LLM calls
+- **11 Custom Metrics Implemented**: Specialized evaluation criteria for storyboard, script, and image agents
+- **Multi-Modal Evaluation**: Vision-based analysis for image consistency using GPT-4o-mini
+- **Heuristic + LLM-Based**: Efficient rule-based evaluation plus advanced vision analysis
 - **Detailed Logging**: Comprehensive debugging and transparency
 - **JSON Extraction**: Handles markdown-wrapped JSON outputs automatically
 
@@ -82,6 +84,7 @@ The project includes a comprehensive evaluation system built on Mastra Evals to 
 ### Available Metrics by Agent (Current)
 - **Storyboard Agent**: 5 metrics (structure, visual quality, content completeness, character consistency, narrative flow)
 - **Script Agent**: 5 metrics (structure, dialogue quality, character development, plot coherence, genre alignment)
+- **Image Generator Agent**: 1 vision-based metric (character and environment visual consistency with weighted scoring)
 
 ## 🛠️ Installation & Setup
 
@@ -132,7 +135,8 @@ src/mastra/
 ├── tools/            # 6 custom tools for processing
 ├── workflows/        # 2 automated workflows
 ├── schemas/          # Zod schemas for type safety
-├── evals/            # evaluation metrics (storyboard + script)
+├── evals/            # evaluation metrics (storyboard + script + image)
+├── scorers/          # LLM-based visual consistency scorers
 ├── index.ts          # Main Mastra configuration
 ├── agent-network.ts  # Agent coordination system
 ├── memory-config.ts  # Memory management setup
@@ -280,7 +284,11 @@ src/
 │   ├── evals/           # Evaluation metrics
 │   │   ├── storyboard-evals.ts
 │   │   ├── script-evals.ts
+│   │   ├── image-evals.ts
+│   │   ├── character-consistency-eval.ts
 │   │   └── index.ts
+│   ├── scorers/         # LLM-based visual consistency scorers
+│   │   └── character-visual-consistency-scorer.ts
 │   ├── tools/           # Custom tools
 │   │   ├── character-consistency-tool.ts
 │   │   ├── image-generation-tool.ts
@@ -303,7 +311,9 @@ src/
     ├── evals.ts
     ├── pdf-upload.ts
     ├── streaming.ts
-    └── workflow-automated.ts
+    ├── workflow-automated.ts
+    ├── test-character-consistency.ts      # Vision-based character consistency test
+    └── test-direct-character-consistency.ts  # Direct AI SDK vision test
 ```
 
 ## 🔧 Development
@@ -610,6 +620,22 @@ npx tsx examples/evals.ts
 
 Outputs metric scores (0.0–1.0) to stdout.
 
+### 6) Character Consistency Testing: `examples/test-character-consistency.ts`
+Tests the vision-based character and environment consistency evaluation system using actual generated images from the `generated-images/` folder:
+
+```bash
+npx tsx examples/test-character-consistency.ts
+```
+
+This example demonstrates:
+- **Multi-modal evaluation** using GPT-4o-mini vision capabilities
+- **Character consistency analysis** across 5 forest scene images
+- **Environment consistency scoring** with detailed breakdown
+- **Weighted scoring system** (60% characters, 40% environment)
+- **Comprehensive reporting** with per-character and per-image analysis
+
+The test uses real storyboard images located in `generated-images/scene_1_A_lush__ancient_fore_*.png` to validate the visual consistency evaluation system.
+
 ### 5) PDF Upload Workflow: `examples/pdf-upload.ts`
 Generates a storyboard then uploads the PDF via the provided workflow helper.
 
@@ -632,10 +658,20 @@ The script prints the upload result (S3 URL and/or downstream integration status
 
 ### Run All Examples Sequentially
 ```bash
-for f in basic-usage streaming workflow-automated evals pdf-upload; do \
+for f in basic-usage streaming workflow-automated evals test-character-consistency pdf-upload; do \
   npx tsx examples/$f.ts; \
 done
 ```
+
+## 🖼️ Generated Images & Test Data
+
+The `generated-images/` folder contains sample storyboard images used for testing the visual consistency evaluation system:
+
+- **`scene_1_A_lush__ancient_fore_*.png`**: 5 forest scene images featuring a young explorer and crow companion
+- **Used by**: Character consistency evaluation tests and examples
+- **Purpose**: Demonstrates multi-modal evaluation capabilities using real generated content
+- **Format**: PNG images generated by Google Imagen through the Image Generator Agent
+- **Evaluation**: These images achieve ~85-90% consistency scores in character and environment analysis
 
 ## 🔗 Integrations
 
