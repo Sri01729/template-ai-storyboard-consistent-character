@@ -5,6 +5,7 @@ import { imageGenerationTool } from '../tools/image-generation-tool';
 import { pdfExportTool } from '../tools/pdf-export-tool';
 import { pdfUploadTool } from '../tools/pdf-upload-tool.js';
 import { characterConsistencyTool } from '../tools/character-consistency-tool';
+import { characterVisualConsistencyLLMScorer } from '../scorers/character-visual-consistency-scorer';
 
 // Step 1: Generate Script from Story Idea
 const generateScriptStep = createStep({
@@ -510,6 +511,116 @@ const uploadPdfStep = createStep({
   },
 });
 
+// Step 4.5: Evaluate Character Visual Consistency (Parallel with PDF Export)
+const evaluateConsistencyStep = createStep({
+  id: 'evaluate-consistency',
+  description: 'Evaluate character visual consistency across generated images',
+  inputSchema: z.object({
+    scenesWithImages: z.array(z.object({
+      sceneNumber: z.number(),
+      description: z.string(),
+      imagePrompt: z.string(),
+      storyContent: z.string().optional(),
+      imagePath: z.string(),
+      style: z.string(),
+    })),
+    title: z.string(),
+  }),
+
+  outputSchema: z.object({
+    // Add evaluation results
+    consistencyEvaluation: z.object({
+      score: z.number().describe('Overall consistency score (0-1)'),
+      reason: z.string().describe('Evaluation reason'),
+      totalCharacters: z.number().describe('Number of characters analyzed'),
+      consistencyIssues: z.array(z.string()).describe('List of consistency issues found'),
+      perCharacter: z.array(z.object({
+        name: z.string(),
+        consistent: z.boolean(),
+        issues: z.array(z.string()),
+        appearsInImages: z.array(z.number()),
+      })).describe('Per-character analysis'),
+      environmentConsistency: z.object({
+        consistent: z.boolean(),
+        score: z.number(),
+        issues: z.array(z.string()),
+        elements: z.array(z.object({
+          name: z.string(),
+          consistent: z.boolean(),
+          notes: z.string(),
+        })),
+      }).describe('Environment consistency analysis'),
+    }).describe('Character visual consistency evaluation results'),
+  }),
+  execute: async ({ inputData, runtimeContext }) => {
+    console.log('🔍 [Automated Workflow] Step 4.5: Evaluating character visual consistency...');
+
+    try {
+      // Convert scenesWithImages to storyboard format for the scorer
+      const storyboardData = {
+        title: inputData.title,
+        scenes: inputData.scenesWithImages.map(scene => ({
+          sceneNumber: scene.sceneNumber,
+          description: scene.description,
+          imagePrompt: scene.imagePrompt,
+          imagePath: scene.imagePath,
+          style: scene.style,
+        }))
+      };
+
+      const storyboardJson = JSON.stringify(storyboardData);
+
+      console.log(`📊 [Consistency Evaluation] Running scorer on ${inputData.scenesWithImages.length} scenes`);
+
+      // Run the character consistency scorer
+      const evaluationResult = await characterVisualConsistencyLLMScorer.measure(
+        `Storyboard for: ${inputData.title}`, // Use title as story idea
+        storyboardJson
+      );
+
+      console.log(`✅ [Consistency Evaluation] Completed with score: ${evaluationResult.score}`);
+      console.log(`📝 [Consistency Evaluation] Reason: ${evaluationResult.info?.reason || 'No reason provided'}`);
+      console.log(`👥 [Consistency Evaluation] Characters analyzed: ${evaluationResult.info?.totalCharacters || 0}`);
+      console.log(`⚠️ [Consistency Evaluation] Issues found: ${evaluationResult.info?.consistencyIssues?.length || 0}`);
+
+      return {
+        consistencyEvaluation: {
+          score: evaluationResult.score,
+          reason: evaluationResult.info?.reason || 'No reason provided',
+          totalCharacters: evaluationResult.info?.totalCharacters || 0,
+          consistencyIssues: evaluationResult.info?.consistencyIssues || [],
+          perCharacter: evaluationResult.info?.perCharacter || [],
+          environmentConsistency: evaluationResult.info?.environmentConsistency || {
+            consistent: false,
+            score: 0,
+            issues: [],
+            elements: [],
+          },
+        },
+      };
+    } catch (error) {
+      console.error('❌ [Consistency Evaluation] Failed:', error);
+
+      // Return with error but don't fail the entire workflow
+      return {
+        consistencyEvaluation: {
+          score: 0,
+          reason: `Evaluation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          totalCharacters: 0,
+          consistencyIssues: ['Evaluation failed'],
+          perCharacter: [],
+          environmentConsistency: {
+            consistent: false,
+            score: 0,
+            issues: ['Evaluation failed'],
+            elements: [],
+          },
+        },
+      };
+    }
+  },
+});
+
 // Create the automated workflow
 export const automatedAgentNetworkWorkflow = createWorkflow({
   id: 'automated-agent-network',
@@ -544,13 +655,48 @@ export const automatedAgentNetworkWorkflow = createWorkflow({
     googleDriveUrl: z.string().optional().describe('Google Drive URL of the uploaded PDF'),
     uploadSuccess: z.boolean().describe('Whether upload was successful'),
     uploadError: z.string().optional().describe('Upload error message if failed'),
+    // Add evaluation results to output
+    consistencyEvaluation: z.object({
+      score: z.number().describe('Overall consistency score (0-1)'),
+      reason: z.string().describe('Evaluation reason'),
+      totalCharacters: z.number().describe('Number of characters analyzed'),
+      consistencyIssues: z.array(z.string()).describe('List of consistency issues found'),
+      perCharacter: z.array(z.object({
+        name: z.string(),
+        consistent: z.boolean(),
+        issues: z.array(z.string()),
+        appearsInImages: z.array(z.number()),
+      })).describe('Per-character analysis'),
+      environmentConsistency: z.object({
+        consistent: z.boolean(),
+        score: z.number(),
+        issues: z.array(z.string()),
+        elements: z.array(z.object({
+          name: z.string(),
+          consistent: z.boolean(),
+          notes: z.string(),
+        })),
+      }).describe('Environment consistency analysis'),
+    }).describe('Character visual consistency evaluation results'),
   }),
-  steps: [generateScriptStep, convertToStoryboardStep, generateImagesStep, exportToPdfStep, uploadPdfStep],
+  steps: [generateScriptStep, convertToStoryboardStep, generateImagesStep, exportToPdfStep, uploadPdfStep, evaluateConsistencyStep],
 })
   .then(generateScriptStep)
   .then(convertToStoryboardStep)
   .then(generateImagesStep)
-  .then(exportToPdfStep)
+  .parallel([exportToPdfStep, evaluateConsistencyStep]) // Run PDF export and evaluation in parallel
+  .map(async ({ inputData, getStepResult }) => {
+    // Combine results from parallel steps
+    const pdfResult = getStepResult(exportToPdfStep);
+    const evaluationResult = getStepResult(evaluateConsistencyStep);
+
+    return {
+      pdfPath: pdfResult.pdfPath,
+      title: pdfResult.title,
+      summary: pdfResult.summary,
+      consistencyEvaluation: evaluationResult.consistencyEvaluation,
+    };
+  })
   .then(uploadPdfStep)
   .commit();
 
@@ -594,6 +740,24 @@ export async function runAutomatedAgentNetwork(
         console.log(`📁 Google Drive URL: ${result.result.googleDriveUrl}`);
       } else {
         console.log(`⚠️ Upload failed: ${result.result.uploadError}`);
+      }
+
+      // Log evaluation results
+      if (result.result.consistencyEvaluation) {
+        console.log('\n🔍 [CONSISTENCY EVALUATION RESULTS]');
+        console.log('=' .repeat(50));
+        console.log(`Score: ${result.result.consistencyEvaluation.score.toFixed(3)} / 1.000`);
+        console.log(`Percentage: ${(result.result.consistencyEvaluation.score * 100).toFixed(1)}%`);
+        console.log(`Reason: ${result.result.consistencyEvaluation.reason}`);
+        console.log(`Characters Analyzed: ${result.result.consistencyEvaluation.totalCharacters}`);
+        console.log(`Issues Found: ${result.result.consistencyEvaluation.consistencyIssues.length}`);
+
+        if (result.result.consistencyEvaluation.consistencyIssues.length > 0) {
+          console.log('\n⚠️ [CONSISTENCY ISSUES]');
+          result.result.consistencyEvaluation.consistencyIssues.forEach((issue, index) => {
+            console.log(`${index + 1}. ${issue}`);
+          });
+        }
       }
 
       return result.result;

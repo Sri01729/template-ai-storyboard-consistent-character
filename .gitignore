@@ -21,7 +21,7 @@ mastra-memory.db
 mastra-memory.db-*
 
 # Generated content
-
+generated-images/
 generated-exports/
 
 # IDE files

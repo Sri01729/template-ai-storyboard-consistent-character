@@ -3,6 +3,7 @@ import { google } from '@ai-sdk/google';
 import { characterConsistencyTool } from '../tools/character-consistency-tool';
 import { createAgentMemory } from '../memory-config';
 import { storyboardSpecificEvals } from '../evals/storyboard-evals';
+import { characterVisualConsistencyLLMScorer } from '../scorers/character-visual-consistency-scorer';
 
 export const storyboardAgent = new Agent({
   name: 'storyboard-creator',
@@ -84,5 +85,7 @@ Return only the JSON object.`,
     storyContentCompleteness: storyboardSpecificEvals.storyContentCompleteness,
     characterConsistency: storyboardSpecificEvals.characterConsistency,
     narrativeFlow: storyboardSpecificEvals.narrativeFlow,
+    // Character visual consistency scorer (shows up in Scorers tab)
+    characterVisualConsistency: characterVisualConsistencyLLMScorer,
   },
 });

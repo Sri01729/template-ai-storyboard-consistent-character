@@ -93,7 +93,7 @@ const storyboardJson = JSON.stringify({
       imagePath: "generated-images/scene_1_forest_001.png"
     },
     {
-      sceneNumber: 2, 
+      sceneNumber: 2,
       imagePath: "generated-images/scene_1_forest_002.png"
     }
   ]
@@ -115,7 +115,7 @@ npx tsx examples/test-character-consistency.ts
 
 This uses the 5 forest scene images in `generated-images/` to demonstrate:
 - Multi-modal LLM analysis of actual generated images
-- Character consistency across scenes (Young Explorer, Crow Companion)  
+- Character consistency across scenes (Young Explorer, Crow Companion)
 - Environment consistency (forest setting, lighting, atmosphere)
 - Weighted scoring system with detailed breakdowns
 
